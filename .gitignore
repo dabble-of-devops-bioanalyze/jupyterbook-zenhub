@@ -1,3 +1,7 @@
 zenhub-token
 .idea
 **/.idea
+bin/
+lib/
+include/
+**/_build/
