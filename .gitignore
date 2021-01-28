@@ -7,3 +7,6 @@ include/
 **/_build/
 etc/
 share/
+jsons/
+.vscode/
+**/__pycache__/
