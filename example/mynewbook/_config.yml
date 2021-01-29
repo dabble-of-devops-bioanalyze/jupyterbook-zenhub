@@ -26,3 +26,6 @@ repository:
 html:
   use_issues_button: true
   use_repository_button: true
+
+sphinx:
+  extra_extensions: [sphinx.ext.imgmath]   # A list of extra extensions to load by Sphinx (added to those already used by JB).
