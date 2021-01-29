@@ -2,6 +2,7 @@
 
 from zendeskhc.HelpCenter import HelpCenter
 from bs4 import BeautifulSoup as bs4
+import json
 import os
 import subprocess
 import configparser
@@ -19,16 +20,19 @@ OK_CODE = 0
 CONFIG_FILE = 'zenhub-token'
 EXCLUDED_HTML_FILENAMES = ['index', 'genindex', 'search'] # these files will not be carried over to Zendesk
 
-article_dict =  {
+# ids for zendesk are hardcoded for now. Need to be made configurable via some API calls.
+ARTICLE_DICT =  {
     "article": {
         "body": "",
         "locale": "en-us",
         "permission_group_id": 1326317,
-        "title": "Sample2 from notebook",
+        "title": "",
         "user_segment_id": 360000471977
     },
     "notify_subscribers": False
 }
+SECTION_ID = 360003315137
+
 
 def read_config_file(configfilepath=CONFIG_FILE): # will return a dict
     config = configparser.ConfigParser()
@@ -52,11 +56,26 @@ def gen_list_of_html_files(source_folder_path):
     excluded_html_file_paths_list = [os.path.join(html_folder_path, x + ".html") for x in EXCLUDED_HTML_FILENAMES]
     # now we exclude the files that jupyter adds to make an independent book
     final_html_file_paths_list = list(set(html_file_paths_list) - set(excluded_html_file_paths_list))
+    logger.info(f'Final List of html files to be sent to Zendesk: \n {final_html_file_paths_list}')
     return final_html_file_paths_list
 
+def update_article_dict(html_file_path, article_dict=ARTICLE_DICT):
+    with open(html_file_path,'r') as f:
+        soup = bs4(f.read(),'html.parser')
+    article_dict['article']['title'] = soup.title.text
+    article_dict['article']['body'] = soup.find(id="main-content").prettify()
+    return article_dict
+    
+def find_section_id_from_zendesk(hc, section_name):
+    sections_list = hc.list_all_sections()
+    for item in sections_list:
+        if item['name'] == section_name:
+            return item['id']
+    # item not found
+    return None
 
 
-def main(source_folder_path):
+def main(source_folder_path, section_name=None):
     # 0. Initialize Zendesk router
     # 1. Generate the html from the markdown files.
     # 2. Create a list of html files that need to be exported to zendesk
@@ -66,14 +85,25 @@ def main(source_folder_path):
     #    c. Check if the file already exists on zendesk hc.
     #        - If yes then use PUT
     #        - If no then use POST
+
+     # 0. Initialize Zendesk router
     zdc = read_config_file()
     hc = HelpCenter(zdc['url'], zdc['username'], zdc['token'])
     st_code = gen_jupyter_book(source_folder_path)
     if st_code != OK_CODE:
         print('Error in creating Jupyter Book.')
         exit(1)
+    # 1. Generate the html from the markdown files.
     html_file_paths = gen_list_of_html_files(source_folder_path)
-    print(html_file_paths)
+    # Find section id
+    section_id = None #find_section_id_from_zendesk(hc, section_name)
+    if section_id is None:
+        section_id = SECTION_ID
+    for f in html_file_paths:
+        logger.info(f'Processing: {f}')
+        article_dict = update_article_dict(f)
+        response_json = hc.create_article(section_id, json.dumps(article_dict))
+        logger.info(f"Article ID: {response_json['article']['id']}, Article URL: {response_json['article']['html_url']}")
 
 
 
