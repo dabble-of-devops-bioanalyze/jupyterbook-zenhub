@@ -1,6 +1,4 @@
 zenhub-token
-.idea
-**/.idea
 bin/
 lib/
 include/
@@ -10,3 +8,4 @@ share/
 jsons/
 .vscode/
 **/__pycache__/
+logs/
