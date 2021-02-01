@@ -1,4 +1,4 @@
-zenhub-token
+config.cfg
 bin/
 lib/
 include/

@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 ERROR_CODE = 1
 OK_CODE = 0
 
-CONFIG_FILE = 'zenhub-token'
+CONFIG_FILE = 'config.cfg'
 EXCLUDED_HTML_FILENAMES = ['index', 'genindex', 'search'] # these files will not be carried over to Zendesk
 
 # ids for zendesk are hardcoded for now. Need to be made configurable via some API calls.
@@ -27,6 +27,7 @@ ARTICLE_DICT =  {
         "locale": "en-us",
         "permission_group_id": 1326317,
         "title": "",
+        "html_url": "",
         "user_segment_id": 360000471977
     },
     "notify_subscribers": False
