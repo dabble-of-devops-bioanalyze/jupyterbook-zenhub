@@ -1,21 +1,26 @@
 #!/usr/bin/env python3
-
 from zendeskhc.HelpCenter import HelpCenter
 from bs4 import BeautifulSoup as bs4
 import json
 import os
+import boto3
 import subprocess
 import configparser
 from glob import glob
 import logging
 from datetime import datetime
 
+
+ERROR_CODE = 1
+OK_CODE = 0
 ROOT_SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))  # top source directory
+AWS_URL_PREFIX = "https://s3.amazonaws.com/"
+
+# setup logger
 LOG_FILE_DIR = os.path.join(ROOT_SOURCE_DIR,'logs')
 LOGGING_FORMAT = '%(name)s - %(levelname)s - %(message)s'
 logger = logging.getLogger(__name__)
-ERROR_CODE = 1
-OK_CODE = 0
+
 
 CONFIG_FILE = 'config.cfg'
 EXCLUDED_HTML_FILENAMES = ['index', 'genindex', 'search'] # these files will not be carried over to Zendesk
@@ -60,11 +65,38 @@ def gen_list_of_html_files(source_folder_path):
     logger.info(f'Final List of html files to be sent to Zendesk: \n {final_html_file_paths_list}')
     return final_html_file_paths_list
 
-def update_article_dict(html_file_path, article_dict=ARTICLE_DICT):
+def upload_to_aws_s3(s3, local_file_path, bucket, s3_file_key):
+    try:
+        s3.upload_file(
+            local_file_path, 
+            bucket, 
+            s3_file_key, 
+            ExtraArgs={'ACL': 'public-read'}
+        )
+        logger.info(f"{local_file_path}: Upload Successful")
+        return True
+    except Exception as e:
+        logger.error(f'{local_file_path}: Some Error occured uploading. \n', e, '\n')
+        return False
+
+def update_article_dict(html_file_path, s3, aws_s3_bucket, article_dict=ARTICLE_DICT):
     with open(html_file_path,'r') as f:
         soup = bs4(f.read(),'html.parser')
     article_dict['article']['title'] = soup.title.text
-    article_dict['article']['body'] = soup.find(id="main-content").prettify()
+    # extract out main content of the html page
+    msoup = soup.find(id="main-content")
+    # find all image references in main content
+    img_tags = msoup.find_all('img')
+    for tag in img_tags:
+        img_url = tag['src']
+        if img_url.startswith('https://') or img_url.startswith('http://'):
+            continue
+        img_file_path = os.path.join(os.path.dirname(html_file_path), img_url)
+        img_s3_file_key = os.path.basename(img_url)
+        status = upload_to_aws_s3(s3, img_file_path, aws_s3_bucket, img_s3_file_key)
+        # fix url to point to aws s3 instead of local path
+        tag['src'] = AWS_URL_PREFIX + aws_s3_bucket + '/' + img_s3_file_key
+    article_dict['article']['body'] = msoup.prettify()
     return article_dict
     
 def find_section_id_from_zendesk(hc, section_name):
@@ -74,6 +106,12 @@ def find_section_id_from_zendesk(hc, section_name):
             return item['id']
     # item not found
     return None
+
+def delete_book_from_zendesk():
+    pass
+
+def find_or_create_section_on_zendesk():
+    pass
 
 
 def main(source_folder_path, section_name=None):
@@ -90,11 +128,15 @@ def main(source_folder_path, section_name=None):
      # 0. Initialize Zendesk router
     zdc = read_config_file()
     hc = HelpCenter(zdc['url'], zdc['username'], zdc['token'])
+    # initialize s3 client
+    s3 = boto3.client("s3", aws_access_key_id=zdc['aws_access_key'], aws_secret_access_key=zdc['aws_secret'])
+    aws_s3_bucket = zdc['aws_s3_bucket']
+    # generate jupyter book
     st_code = gen_jupyter_book(source_folder_path)
     if st_code != OK_CODE:
         print('Error in creating Jupyter Book.')
         exit(1)
-    # 1. Generate the html from the markdown files.
+    # find html files to send over
     html_file_paths = gen_list_of_html_files(source_folder_path)
     # Find section id
     section_id = None #find_section_id_from_zendesk(hc, section_name)
@@ -102,7 +144,7 @@ def main(source_folder_path, section_name=None):
         section_id = SECTION_ID
     for f in html_file_paths:
         logger.info(f'Processing: {f}')
-        article_dict = update_article_dict(f)
+        article_dict = update_article_dict(f, s3, aws_s3_bucket)
         response_json = hc.create_article(section_id, json.dumps(article_dict))
         logger.info(f"Article ID: {response_json['article']['id']}, Article URL: {response_json['article']['html_url']}")
 
