@@ -48,3 +48,10 @@ def read_config_file(config): #returns a dict
     config_dict = {key:cfg[key] for key in cfg.keys()}
     return config_dict
 ```
+
+## Links
+
+Here is a link to [markdown.md](markdown.md) file.
+
+
+Here is a link to a [Using a directive section](markdown.md#using-a-directive).
