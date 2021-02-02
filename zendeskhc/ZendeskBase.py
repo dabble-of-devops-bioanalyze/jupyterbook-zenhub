@@ -11,10 +11,10 @@ class ZendeskError(Exception):
         return repr(self.value)
 
 class Base:
+    session = requests.Session()
     def get(self, url, email=None, password=None):
-        session = requests.Session()
-        session.auth = (email, password)
-        response_raw = session.get(url)
+        self.session.auth = (email, password)
+        response_raw = self.session.get(url)
 
         if response_raw.status_code == 429:
             time.sleep(response_raw.headers['Retry-After'])
@@ -27,10 +27,9 @@ class Base:
                 return None
 
     def put(self, url, data, email=None, password=None):
-        session = requests.Session()
-        session.auth = (email, password)
-        session.headers = {'Content-Type': 'application/json'}
-        response_raw = session.put(url, data)
+        self.session.auth = (email, password)
+        self.session.headers = {'Content-Type': 'application/json'}
+        response_raw = self.session.put(url, data)
 
         if response_raw.status_code == 429:
             time.sleep(response_raw.headers['Retry-After'])
@@ -43,10 +42,9 @@ class Base:
                 return None
 
     def post(self, url, data, email=None, password=None):
-        session = requests.Session()
-        session.auth = (email, password)
-        session.headers = {'Content-Type': 'application/json'}
-        response_raw = session.post(url, data)
+        self.session.auth = (email, password)
+        self.session.headers = {'Content-Type': 'application/json'}
+        response_raw = self.session.post(url, data)
 
         if response_raw.status_code == 429:
             time.sleep(response_raw.headers['Retry-After'])
@@ -59,9 +57,8 @@ class Base:
                 return None
 
     def delete(self, url, email=None, password=None):
-        session = requests.Session()
-        session.auth = (email, password)
-        response_raw = session.delete(url)
+        self.session.auth = (email, password)
+        response_raw = self.session.delete(url)
 
         if response_raw.status_code == 429:
             time.sleep(response_raw.headers['Retry-After'])
