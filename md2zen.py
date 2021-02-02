@@ -6,6 +6,7 @@ import os
 import boto3
 import subprocess
 import configparser
+import yaml
 from glob import glob
 import logging
 from datetime import datetime
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 CONFIG_FILE = 'config.cfg'
+TOC_FILE = "_toc.yml"
 EXCLUDED_HTML_FILENAMES = ['index', 'genindex', 'search'] # these files will not be carried over to Zendesk
 
 # ids for zendesk are hardcoded for now. Need to be made configurable via some API calls.
@@ -46,6 +48,20 @@ def read_config_file(configfilepath=CONFIG_FILE): # will return a dict
     cfg = config['DEFAULT'] # KISS for now.
     config_dict = {key:cfg[key] for key in cfg.keys()}
     return config_dict
+
+def read_toc_yaml(yaml_file):
+    logger.info(f'Reading TOC yaml file: {yaml_file}')
+    toc_dict = {}
+    # tie yaml read in try+except to return empty if there is an error.
+    try:
+        with open(yaml_file, "r") as f:
+            toc_dict = yaml.load(f, Loader=yaml.FullLoader)
+            logger.debug(f'TOC dict: {toc_dict}')
+    except Exception as e:
+        logger.exception(
+            f'Exception occured while reading TOC yaml file: {yaml_file}\n Exception: {e}')
+        return ERROR_CODE, toc_dict
+    return OK_CODE, toc_dict
 
 def gen_jupyter_book(source_folder_path, cwd=None):
     cmd_string = f"jupyter-book build {source_folder_path}"
@@ -107,6 +123,12 @@ def find_section_id_from_zendesk(hc, section_name):
     # item not found
     return None
 
+def found_category_name_in_list(cat_name, category_resp):
+    for cat in category_resp["categories"]:
+        if cat_name == cat["name"]:
+            return True
+    return False
+
 def delete_book_from_zendesk():
     pass
 
@@ -124,13 +146,22 @@ def main(source_folder_path, section_name=None):
     #    c. Check if the file already exists on zendesk hc.
     #        - If yes then use PUT
     #        - If no then use POST
-
-     # 0. Initialize Zendesk router
+    # read TOC YAML file
+    st_code, toc = read_toc_yaml(os.path.join(source_folder_path, TOC_FILE))
+    if st_code is not OK_CODE:
+        exit(1)
+     # 0. Initialize Zendesk router & S3
     zdc = read_config_file()
     hc = HelpCenter(zdc['url'], zdc['username'], zdc['token'])
-    # initialize s3 client
     s3 = boto3.client("s3", aws_access_key_id=zdc['aws_access_key'], aws_secret_access_key=zdc['aws_secret'])
     aws_s3_bucket = zdc['aws_s3_bucket']
+    zendesk_category_name = zdc['zendesk_category_name']
+    logger.info(f"Category Name: {zendesk_category_name}")
+    # check if category exists on zendesk. If not error out.
+    zendesk_categories = hc.list_all_categories()
+    if not found_category_name_in_list(zendesk_category_name, zendesk_categories):
+        logger.error("This Category does not exist on Zendesk. Please set it up via UI and retry")
+        exit(1)
     # generate jupyter book
     st_code = gen_jupyter_book(source_folder_path)
     if st_code != OK_CODE:
@@ -165,7 +196,6 @@ if __name__ == '__main__':
         ''')
     parser.add_argument("-sn", "--sectionname", help='Name of the Section to put the files in')
     args = parser.parse_args()
-    print(args)
     book_dir_path = os.path.abspath(args.bookdir)
     # set up logging
     book_dir_name = os.path.basename(book_dir_path)

@@ -13,7 +13,8 @@
 # - part: .....
 
 # Top level file Needed to build the book else JB will error out. 
-# The file can just contain a L1 title like "# Introduction". # Won't make it to Zendesk
+# The file can just contain a L1 title like "# Introduction". 
+# It won't make it to Zendesk
 - file: intro 
 - part: Get started # will be made into a Zendesk section if it doesn't exist.
   chapters:
