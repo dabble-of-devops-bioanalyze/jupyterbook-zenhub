@@ -90,15 +90,9 @@ def gen_jupyter_book(source_folder_path, cwd=None):
 def gen_list_of_sections_and_html_files(source_folder_path, toc):
     html_files = [] # list of dicts
     sections = [] # list of section names
-    # first we find all the html files in the path
     html_folder_path = os.path.join(source_folder_path, "_build", "html")
-    html_folder_glob_path = os.path.join(html_folder_path,"*.html")
-    html_file_paths_list = glob(html_folder_glob_path)
-    excluded_html_file_paths_list = [os.path.join(html_folder_path, x + ".html") for x in EXCLUDED_HTML_FILENAMES]
-    # now we exclude the files that jupyter adds to make an independent book
-    final_html_file_paths_list = list(set(html_file_paths_list) - set(excluded_html_file_paths_list))
     for item in toc:
-        if 'part' in item.keys():
+        if 'part' in item.keys(): # will exclude intro file from the transfer to zendesk
             section = item['part']
             sections.append(section)
             files = item['chapters']
@@ -195,15 +189,14 @@ def main(source_folder_path, section_name=None):
     if not found_category_name_in_list(zendesk_category_name, zendesk_categories):
         logger.error("This Category does not exist on Zendesk. Please set it up via UI and retry")
         exit(1)
+    # find html files to send over
+    sections, html_file_paths = gen_list_of_sections_and_html_files(source_folder_path, toc)
+    print(html_file_paths)
     # generate jupyter book
     st_code = gen_jupyter_book(source_folder_path)
     if st_code != OK_CODE:
         print('Error in creating Jupyter Book.')
         exit(1)
-    # find html files to send over
-    sections, html_file_paths = gen_list_of_sections_and_html_files(source_folder_path, toc)
-    print(html_file_paths)
-    exit(1)
     # Find section id
     section_id = None #find_section_id_from_zendesk(hc, section_name)
     if section_id is None:
@@ -214,7 +207,6 @@ def main(source_folder_path, section_name=None):
         article_dict = update_article_dict(f, s3, aws_s3_bucket)
         response_json = hc.create_article(section_id, json.dumps(article_dict))
         logger.info(f"Article ID: {response_json['article']['id']}, Article URL: {response_json['article']['html_url']}")
-
 
 
 if __name__ == '__main__':
