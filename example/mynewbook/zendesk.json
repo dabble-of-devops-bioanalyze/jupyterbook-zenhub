@@ -1,5 +1,40 @@
 {
-"organization": "Test",
-"project": "Test Project",
-"users": ["user1@gmail.com", "user2@gmail.com"]
+    "timestamp": "02-03-2021:15:01:39Z",
+    "articles": [
+        {
+            "section_name": "Announcements",
+            "section_id": 360003315137,
+            "html_file_path": "/Users/Ash/pydev/zenhub/example/mynewbook/_build/html/content.html",
+            "article_id": 360017624938,
+            "article_html_url": "https://dabbleofdevopshelp.zendesk.com/hc/en-us/articles/360017624938-Content-in-Jupyter-Book-My-sample-book"
+        },
+        {
+            "section_name": "Announcements",
+            "section_id": 360003315137,
+            "html_file_path": "/Users/Ash/pydev/zenhub/example/mynewbook/_build/html/notebooks.html",
+            "article_id": 360017624958,
+            "article_html_url": "https://dabbleofdevopshelp.zendesk.com/hc/en-us/articles/360017624958-Content-with-notebooks-My-sample-book"
+        },
+        {
+            "section_name": "Markdown Samples",
+            "section_id": 360005036557,
+            "html_file_path": "/Users/Ash/pydev/zenhub/example/mynewbook/_build/html/markdown.html",
+            "article_id": 360017624978,
+            "article_html_url": "https://dabbleofdevopshelp.zendesk.com/hc/en-us/articles/360017624978-Markdown-Files-My-sample-book"
+        },
+        {
+            "section_name": "Markdown Samples",
+            "section_id": 360005036557,
+            "html_file_path": "/Users/Ash/pydev/zenhub/example/mynewbook/_build/html/myfile1.html",
+            "article_id": 360017491557,
+            "article_html_url": "https://dabbleofdevopshelp.zendesk.com/hc/en-us/articles/360017491557-MD-Experiments-My-sample-book"
+        },
+        {
+            "section_name": "Markdown Samples",
+            "section_id": 360005036557,
+            "html_file_path": "/Users/Ash/pydev/zenhub/example/mynewbook/_build/html/myfile2.html",
+            "article_id": 360017491577,
+            "article_html_url": "https://dabbleofdevopshelp.zendesk.com/hc/en-us/articles/360017491577-My-2nd-File-My-sample-book"
+        }
+    ]
 }

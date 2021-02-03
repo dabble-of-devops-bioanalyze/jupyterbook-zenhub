@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 CONFIG_FILE = 'config.cfg'
 TOC_FILE = "_toc.yml"
+ZENDESK_FILE = "zendesk.json"
 EXCLUDED_HTML_FILENAMES = ['index', 'genindex', 'search'] # these files will not be carried over to Zendesk
 
 # ids for zendesk are hardcoded for now. Need to be made configurable via some API calls.
@@ -229,12 +230,24 @@ def main(source_folder_path, section_name=None):
         exit(1)
     html_files_for_zendesk = handle_sections_on_zendesk(hc, html_files_list, zendesk_category_id)
     logger.info(f'html files to upload to Zendesk: \n {html_files_for_zendesk}')
+    # find out if these files exist already on Zendesk (To Be Done)
     for f in html_files_for_zendesk:
         logger.info(f'Processing: {f}')
         article_dict = update_article_dict(f['html_file_path'], s3, aws_s3_bucket)
         section_id = f['section_id']
         response_json = hc.create_article(section_id, json.dumps(article_dict))
-        logger.info(f"Article ID: {response_json['article']['id']}, Article URL: {response_json['article']['html_url']}")
+        article_id = response_json['article']['id']
+        f.update({'article_id': article_id})
+        article_html_url = response_json['article']['html_url']
+        f.update({'article_html_url': article_html_url})
+        logger.info(f"Article ID: {article_id}, Article URL: {article_html_url}")
+    # write html_files_for_zendesk to json
+    zendesk_file_path = os.path.join(source_folder_path, ZENDESK_FILE)
+    current_utc_datetime = datetime.utcnow()
+    dt_stamp = current_utc_datetime.strftime("%m-%d-%Y:%H:%M:%SZ")
+    zendesk_json = {'timestamp': dt_stamp, 'articles': html_files_for_zendesk}
+    with open(zendesk_file_path,'w') as f:
+        f.write(json.dumps(zendesk_json))
 
 
 if __name__ == '__main__':
