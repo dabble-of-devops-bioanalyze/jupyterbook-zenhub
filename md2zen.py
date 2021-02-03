@@ -176,6 +176,7 @@ def handle_sections_on_zendesk(hc, html_files_list, zendesk_category_id):
                 exit(1)
             else:
                 sections_resp['sections'].append(section_resp['section'])
+                section_id = section_resp['section']['id']
         html_files_for_zendesk.append({'section_name': item['section_name'], 'section_id': section_id, 'html_file_path': item['html_file_path']})
     return html_files_for_zendesk
 
