@@ -228,11 +228,11 @@ def main(source_folder_path, section_name=None):
         print('Error in creating Jupyter Book.')
         exit(1)
     html_files_for_zendesk = handle_sections_on_zendesk(hc, html_files_list, zendesk_category_id)
-    print(html_files_for_zendesk)
-    exit(1)
+    logger.info(f'html files to upload to Zendesk: \n {html_files_for_zendesk}')
     for f in html_files_for_zendesk:
         logger.info(f'Processing: {f}')
-        article_dict = update_article_dict(f, s3, aws_s3_bucket)
+        article_dict = update_article_dict(f['html_file_path'], s3, aws_s3_bucket)
+        section_id = f['section_id']
         response_json = hc.create_article(section_id, json.dumps(article_dict))
         logger.info(f"Article ID: {response_json['article']['id']}, Article URL: {response_json['article']['html_url']}")
 
