@@ -16,7 +16,7 @@
 # The file can just contain a L1 title like "# Introduction". 
 # It won't make it to Zendesk
 - file: intro 
-- part: Get started # will be made into a Zendesk section if it doesn't exist.
+- part: Announcements # will be made into a Zendesk section if it doesn't exist.
   chapters:
   - file: content
   - file: notebooks

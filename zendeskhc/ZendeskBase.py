@@ -12,6 +12,9 @@ class ZendeskError(Exception):
 
 class Base:
     session = requests.Session()
+    def __del__(self):
+        self.session.close()
+
     def get(self, url, email=None, password=None):
         self.session.auth = (email, password)
         response_raw = self.session.get(url)

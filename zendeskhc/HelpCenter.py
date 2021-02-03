@@ -206,10 +206,9 @@ class HelpCenter(Base):
 
     def create_section(self, category_id, data, locale=None):
         if not locale:
-            url = self.domain + '/api/v2/help_center/categories/{id}.json'.format(id=section_id)
+            url = self.domain + '/api/v2/help_center/categories/{id}/sections.json'.format(id=category_id)
         else:
-            url = self.domain + '/api/v2/help_center/{locale}/categories/{id}.json'.format(locale=locale, id=section_id)
-
+            url = self.domain + '/api/v2/help_center/{locale}/categories/{id}/sections'.format(locale=locale, id=category_id)
         return self.post(url, data, self.email, self.password)
 
     def update_section(self, section_id, data, locale=None):

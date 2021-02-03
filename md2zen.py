@@ -14,6 +14,7 @@ from datetime import datetime
 
 ERROR_CODE = 1
 OK_CODE = 0
+NOT_FOUND = -1
 ROOT_SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))  # top source directory
 AWS_URL_PREFIX = "https://s3.amazonaws.com/"
 
@@ -88,25 +89,18 @@ def gen_jupyter_book(source_folder_path, cwd=None):
     return st_code
 
 def gen_list_of_sections_and_html_files(source_folder_path, toc):
-    html_files = [] # list of dicts
-    sections = [] # list of section names
+    html_files_list = [] # list of dicts
     html_folder_path = os.path.join(source_folder_path, "_build", "html")
     for item in toc:
         if 'part' in item.keys(): # will exclude intro file from the transfer to zendesk
             section = item['part']
-            sections.append(section)
             files = item['chapters']
             for f in files:
                 filename = f['file']
                 html_file_path = os.path.join(html_folder_path, filename + ".html")
-                html_files.append(
-                    {
-                        'section': section,
-                        'html_file_path': html_file_path
-                    }
-                )
-    logger.info(f'Final List of html files to be sent to Zendesk: \n {html_files}')
-    return sections, html_files
+                html_files_list.append({'section_name': section, 'html_file_path': html_file_path})
+    logger.info(f'Final List of html files to be sent to Zendesk: \n {html_files_list}')
+    return html_files_list
 
 def upload_to_aws_s3(s3, local_file_path, bucket, s3_file_key):
     try:
@@ -141,25 +135,57 @@ def update_article_dict(html_file_path, s3, aws_s3_bucket, article_dict=ARTICLE_
         tag['src'] = AWS_URL_PREFIX + aws_s3_bucket + '/' + img_s3_file_key
     article_dict['article']['body'] = msoup.prettify()
     return article_dict
-    
-def find_section_id_from_zendesk(hc, section_name):
-    sections_list = hc.list_all_sections()
-    for item in sections_list:
-        if item['name'] == section_name:
-            return item['id']
-    # item not found
-    return None
 
-def found_category_name_in_list(cat_name, category_resp):
+def find_section_name_in_list(section_name, sections_resp, category_id):
+    for item in sections_resp['sections']:
+        if item['name'] == section_name and item['category_id'] == category_id:
+            return item['id']
+    return NOT_FOUND
+
+def setup_section_on_zendesk(hc, section_name, zendesk_category_id):
+    data_dict = {
+        "section": {
+            "position": 0, 
+            "locale": "en-us", 
+            "name": section_name,
+        }
+    }
+    try: 
+        resp = hc.create_section(zendesk_category_id, json.dumps(data_dict), locale='en-us')
+        logger.info(f'Created new section on Zendesk:\n {resp}')
+        return resp
+    except:
+        logger.error(f'Error in creating section_name: {section_name} on Zendesk')
+        return NOT_FOUND
+
+def handle_sections_on_zendesk(hc, html_files_list, zendesk_category_id):
+# will check if all sections exist on Zendesk in the category
+# if not, will create the section on Zendesk
+# will update
+    sections_resp = hc.list_all_sections()
+    logger.info(sections_resp)
+    html_files_for_zendesk = []
+    for item in html_files_list:
+        section_name = item['section_name']
+        section_id = find_section_name_in_list(section_name, sections_resp,zendesk_category_id)
+        if section_id == NOT_FOUND:
+            # set up section on zendesk
+            section_resp = setup_section_on_zendesk(hc, section_name, zendesk_category_id)
+            if section_resp == NOT_FOUND:
+                logger.error(f'Could not create section name: {section_name} on Zendesk. Please check, cleanup and retry')
+                exit(1)
+            else:
+                sections_resp['sections'].append(section_resp['section'])
+        html_files_for_zendesk.append({'section_name': item['section_name'], 'section_id': section_id, 'html_file_path': item['html_file_path']})
+    return html_files_for_zendesk
+
+def find_category_id_in_list(cat_name, category_resp):
     for cat in category_resp["categories"]:
         if cat_name == cat["name"]:
-            return True
-    return False
+            return cat['id']
+    return NOT_FOUND
 
 def delete_book_from_zendesk():
-    pass
-
-def find_or_create_section_on_zendesk():
     pass
 
 
@@ -186,23 +212,24 @@ def main(source_folder_path, section_name=None):
     logger.info(f"Category Name: {zendesk_category_name}")
     # check if category exists on zendesk. If not error out.
     zendesk_categories = hc.list_all_categories()
-    if not found_category_name_in_list(zendesk_category_name, zendesk_categories):
+    zendesk_category_id = find_category_id_in_list(zendesk_category_name, zendesk_categories)
+    if zendesk_category_id == NOT_FOUND:
         logger.error("This Category does not exist on Zendesk. Please set it up via UI and retry")
         exit(1)
+    else:
+        logger.info(f'Category_ID: {zendesk_category_id}')
     # find html files to send over
-    sections, html_file_paths = gen_list_of_sections_and_html_files(source_folder_path, toc)
-    print(html_file_paths)
+    html_files_list = gen_list_of_sections_and_html_files(source_folder_path, toc)
+    print(html_files_list)
     # generate jupyter book
     st_code = gen_jupyter_book(source_folder_path)
     if st_code != OK_CODE:
         print('Error in creating Jupyter Book.')
         exit(1)
-    # Find section id
-    section_id = None #find_section_id_from_zendesk(hc, section_name)
-    if section_id is None:
-        section_id = SECTION_ID
+    html_files_for_zendesk = handle_sections_on_zendesk(hc, html_files_list, zendesk_category_id)
+    print(html_files_for_zendesk)
     exit(1)
-    for f in html_file_paths:
+    for f in html_files_for_zendesk:
         logger.info(f'Processing: {f}')
         article_dict = update_article_dict(f, s3, aws_s3_bucket)
         response_json = hc.create_article(section_id, json.dumps(article_dict))
