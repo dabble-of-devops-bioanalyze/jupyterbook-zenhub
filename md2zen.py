@@ -63,6 +63,23 @@ def read_toc_yaml(yaml_file):
         return ERROR_CODE, toc_dict
     return OK_CODE, toc_dict
 
+''' TOC Dict looks like this:
+[
+  {"file": "intro"},
+  { "part": "Get started",
+    "chapters": [
+      { "file": "content"},
+      {"file": "notebooks"}
+    ]},
+  {"part": "Markdown Samples",
+    "chapters": [
+      {"file": "markdown"},
+      {"file": "myfile1"},
+      { "file": "sub/myfile2"}
+    ]}
+]
+'''
+
 def gen_jupyter_book(source_folder_path, cwd=None):
     cmd_string = f"jupyter-book build {source_folder_path}"
     result = subprocess.run(cmd_string, shell=True, cwd=cwd)
@@ -70,7 +87,9 @@ def gen_jupyter_book(source_folder_path, cwd=None):
     logger.info(f'jupyter-book build STATUS CODE = {st_code}')
     return st_code
 
-def gen_list_of_html_files(source_folder_path):
+def gen_list_of_sections_and_html_files(source_folder_path, toc):
+    html_files = [] # list of dicts
+    sections = [] # list of section names
     # first we find all the html files in the path
     html_folder_path = os.path.join(source_folder_path, "_build", "html")
     html_folder_glob_path = os.path.join(html_folder_path,"*.html")
@@ -78,8 +97,22 @@ def gen_list_of_html_files(source_folder_path):
     excluded_html_file_paths_list = [os.path.join(html_folder_path, x + ".html") for x in EXCLUDED_HTML_FILENAMES]
     # now we exclude the files that jupyter adds to make an independent book
     final_html_file_paths_list = list(set(html_file_paths_list) - set(excluded_html_file_paths_list))
-    logger.info(f'Final List of html files to be sent to Zendesk: \n {final_html_file_paths_list}')
-    return final_html_file_paths_list
+    for item in toc:
+        if 'part' in item.keys():
+            section = item['part']
+            sections.append(section)
+            files = item['chapters']
+            for f in files:
+                filename = f['file']
+                html_file_path = os.path.join(html_folder_path, filename + ".html")
+                html_files.append(
+                    {
+                        'section': section,
+                        'html_file_path': html_file_path
+                    }
+                )
+    logger.info(f'Final List of html files to be sent to Zendesk: \n {html_files}')
+    return sections, html_files
 
 def upload_to_aws_s3(s3, local_file_path, bucket, s3_file_key):
     try:
@@ -168,11 +201,14 @@ def main(source_folder_path, section_name=None):
         print('Error in creating Jupyter Book.')
         exit(1)
     # find html files to send over
-    html_file_paths = gen_list_of_html_files(source_folder_path)
+    sections, html_file_paths = gen_list_of_sections_and_html_files(source_folder_path, toc)
+    print(html_file_paths)
+    exit(1)
     # Find section id
     section_id = None #find_section_id_from_zendesk(hc, section_name)
     if section_id is None:
         section_id = SECTION_ID
+    exit(1)
     for f in html_file_paths:
         logger.info(f'Processing: {f}')
         article_dict = update_article_dict(f, s3, aws_s3_bucket)
