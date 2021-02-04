@@ -62,10 +62,11 @@ class Base:
     def delete(self, url, email=None, password=None):
         self.session.auth = (email, password)
         response_raw = self.session.delete(url)
-
         if response_raw.status_code == 429:
             time.sleep(response_raw.headers['Retry-After'])
             return delete(url, data, email, password)
+        elif response_raw.status_code == 204: # HTTP Status for No Content
+            return {'status_code': 204}
         else:
             if response_raw.headers['Content-Type'] == "application/json; charset=utf-8":
                 response_json = json.loads(response_raw.content)

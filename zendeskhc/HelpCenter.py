@@ -100,8 +100,14 @@ class HelpCenter(Base):
             url = self.domain + '/api/v2/help_center/articles/{id}.json'.format(id=article_id)
         else:
             url = self.domain + '/api/v2/help_center/{locale}/articles/{id}.json'.format(id=article_id, locale=locale)
-
         return self.put(url, data, self.email, self.password)
+
+    def archive_article(self, article_id, locale=None):
+        if not locale:
+            url = self.domain + '/api/v2/help_center/articles/{id}.json'.format(id=article_id)
+        else:
+            url = self.domain + '/api/v2/help_center/{locale}/articles/{id}.json'.format(id=article_id, locale=locale)
+        return self.delete(url, self.email, self.password)
 
     # Translation functions
 

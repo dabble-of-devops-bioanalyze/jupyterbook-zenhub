@@ -71,7 +71,9 @@ def gen_jupyter_book(source_folder_path, cwd=None):
     result = subprocess.run(cmd_string, shell=True, cwd=cwd)
     st_code = result.returncode
     logger.info(f'jupyter-book build STATUS CODE = {st_code}')
-    return st_code
+    if st_code != OK_CODE:
+        print('Error in creating Jupyter Book.')
+        exit(1)
 
 def gen_list_of_sections_and_html_files(source_folder_path, toc):
     html_files_list = [] # list of dicts
@@ -183,22 +185,33 @@ def file_exists_on_zendesk(file_dict, zendesk_json_pre):
             return item
     return NOT_FOUND
 
-
 def check_category_on_zendesk(hc, zendesk_category_name):
     # check if category exists on zendesk. If not error out.
     zendesk_categories = hc.list_all_categories()
     for cat in zendesk_categories["categories"]:
         if zendesk_category_name == cat["name"]:
             logger.info(f"Category_ID: {cat['id']}")
-            return
-    logger.error("This Category does not exist on Zendesk. Please set it up via UI and retry")
+            return cat['id']
+    logger.error(f"This Category: {zendesk_category_name}, does not exist on Zendesk. Please set it up via UI and retry")
     exit(1)
 
-def delete_book_from_zendesk():
-    pass
+def archive_book_from_zendesk(hc, zendesk_json_pre, zendesk_file_path):
+    for article in zendesk_json_pre['articles']:
+        article_id = article['article_id']
+        html_file_path = article['html_file_path']
+        logger.info(f"Archiving: {html_file_path} at Zendesk, Article ID:{article_id}")
+        resp = hc.archive_article(article_id, locale='en-us')
+        status_code = resp['status_code']
+        if  status_code == 204:
+            logger.info(f'{article_id} Successfully Archived')
+        else:
+            logger.warn(f"Error occured in Archiving: {article_id}. HTTP Code = {status_code}")
+    open(zendesk_file_path,'w').close() # will rewrite zendesk.json to zero bytes
+    logger.info(f'Book archived at Zendesk. You can delete it manually from the Admin UI')
+    exit(0)
 
 
-def main(source_folder_path, section_name=None):
+def main(source_folder_path, archive_book_flag):
     # 0. Initialize Zendesk router
     # 1. Generate the html from the markdown files.
     # 2. Create a list of html files that need to be exported to zendesk
@@ -219,19 +232,16 @@ def main(source_folder_path, section_name=None):
     # load any previous zendesk activity on this source folder
     zendesk_file_path = os.path.join(source_folder_path, ZENDESK_FILE)
     zendesk_json_pre = read_zendesk_json(zendesk_file_path)
+    if archive_book_flag: # archive the book on Zendesk and exit OK.
+        archive_book_from_zendesk(hc, zendesk_json_pre, zendesk_file_path)
     aws_s3_bucket = zdc['aws_s3_bucket']
     zendesk_category_name = zdc['zendesk_category_name']
     logger.info(f"Category Name: {zendesk_category_name}")
-    check_category_on_zendesk(hc, zendesk_category_name) # will exit program if not found
+    zendesk_category_id = check_category_on_zendesk(hc, zendesk_category_name) # will exit program if not found
     # find html files to send over
     html_files_list = gen_list_of_sections_and_html_files(source_folder_path, toc)
-    print(html_files_list)
-    exit(1)
     # generate jupyter book
-    st_code = gen_jupyter_book(source_folder_path)
-    if st_code != OK_CODE:
-        print('Error in creating Jupyter Book.')
-        exit(1)
+    gen_jupyter_book(source_folder_path)
     html_files_for_zendesk = handle_sections_on_zendesk(hc, html_files_list, zendesk_category_id)
     logger.info(f'html files to upload to Zendesk: \n {html_files_for_zendesk}')
     # now we iterate over list of files
@@ -297,8 +307,9 @@ if __name__ == '__main__':
     os.makedirs(LOG_FILE_DIR, exist_ok=True)
     logging.basicConfig(
         filename=log_file_path,
-        level=logging.DEBUG,
+        level=logging.INFO,
         filemode='w',
         format=LOGGING_FORMAT
     )
+    logger.info(f"Script initiated with Arguments: {args}")
     main(book_dir_path, archive_book_flag)
