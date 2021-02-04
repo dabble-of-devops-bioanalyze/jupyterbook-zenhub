@@ -196,7 +196,11 @@ def check_category_on_zendesk(hc, zendesk_category_name):
     exit(1)
 
 def archive_book_from_zendesk(hc, zendesk_json_pre, zendesk_file_path):
-    for article in zendesk_json_pre['articles']:
+    articles = zendesk_json_pre['articles'] 
+    if len(articles) < 1:
+        logger.info('No articles found in the zendesk.json file to Archive')
+        exit(0)
+    for article in articles:
         article_id = article['article_id']
         html_file_path = article['html_file_path']
         logger.info(f"Archiving: {html_file_path} at Zendesk, Article ID:{article_id}")
@@ -283,18 +287,20 @@ def main(source_folder_path, archive_book_flag):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
-        description="This utility creates jupyterbook html from .md files and uploads them to zendesk",
+        description="This utility creates jupyterbook html from .md files and uploads them to zendesk OR archives them on zendesk",
         epilog=''' 
-            Examples of the command are: 
-            ./md2zen.py <path/to/bookdirectory> [--sectionname "section name"]
-            ''', formatter_class=argparse.RawTextHelpFormatter) 
+    Examples of the command are: 
+        To Build (or Update) a book on Zendesk:
+            ./md2zen.py <path/to/bookdirectory/>
+        To Archive a book's pages on Zendesk:
+            ./md2zen.py <path/to/bookdirectory/> -a
+    ''', formatter_class=argparse.RawTextHelpFormatter) 
     parser.add_argument("bookdir",
-                        help='''
-        A directory path where the source markdown files for the book reside
-        A sample book is found at ./example/mynewbook/
-        ''')
+    help='''
+    A directory path where the source markdown files for the book reside.
+    A sample book is found at ./example/mynewbook/ ''')
     parser.add_argument("-a", "--archive", default=False, action='store_true',
-                        help='if True, it will archive any html pages on Zendesk.')
+                        help='if True, it will archive any html pages on Zendesk(found in zendesk.json file).')
     args = parser.parse_args()
     book_dir_path = os.path.abspath(args.bookdir)
     archive_book_flag = args.archive
