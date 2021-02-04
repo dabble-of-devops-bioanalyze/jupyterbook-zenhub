@@ -209,7 +209,7 @@ def archive_book_from_zendesk(hc, zendesk_json_pre, zendesk_file_path):
         if  status_code == 204:
             logger.info(f'{article_id} Successfully Archived')
         else:
-            logger.warn(f"Error occured in Archiving: {article_id}. HTTP Code = {status_code}")
+            logger.warning(f"Error occured in Archiving: {article_id}. HTTP Code = {status_code}")
     open(zendesk_file_path,'w').close() # will rewrite zendesk.json to zero bytes
     logger.info(f'Book archived at Zendesk. You can delete it manually from the Admin UI')
     exit(0)

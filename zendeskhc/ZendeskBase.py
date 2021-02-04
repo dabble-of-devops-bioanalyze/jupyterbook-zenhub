@@ -67,6 +67,8 @@ class Base:
             return delete(url, data, email, password)
         elif response_raw.status_code == 204: # HTTP Status for No Content
             return {'status_code': 204}
+        elif response_raw.status_code == 404: # HTTP Status for Not Found
+            return {'status_code': 404}
         else:
             if response_raw.headers['Content-Type'] == "application/json; charset=utf-8":
                 response_json = json.loads(response_raw.content)
