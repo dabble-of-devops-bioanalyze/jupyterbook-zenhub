@@ -165,11 +165,6 @@ def handle_sections_on_zendesk(hc, html_files_list, zendesk_category_id):
         html_files_for_zendesk.append({'section_name': item['section_name'], 'section_id': section_id, 'html_file_path': item['html_file_path']})
     return html_files_for_zendesk
 
-def find_category_id_in_list(cat_name, category_resp):
-    for cat in category_resp["categories"]:
-        if cat_name == cat["name"]:
-            return cat['id']
-    return NOT_FOUND
 
 def read_zendesk_json(zendesk_file_path):
     try:
@@ -187,6 +182,17 @@ def file_exists_on_zendesk(file_dict, zendesk_json_pre):
             # now we check if it exists on zendesk (TBD)
             return item
     return NOT_FOUND
+
+
+def check_category_on_zendesk(hc, zendesk_category_name):
+    # check if category exists on zendesk. If not error out.
+    zendesk_categories = hc.list_all_categories()
+    for cat in zendesk_categories["categories"]:
+        if zendesk_category_name == cat["name"]:
+            logger.info(f"Category_ID: {cat['id']}")
+            return
+    logger.error("This Category does not exist on Zendesk. Please set it up via UI and retry")
+    exit(1)
 
 def delete_book_from_zendesk():
     pass
@@ -210,20 +216,17 @@ def main(source_folder_path, section_name=None):
     zdc = read_config_file()
     hc = HelpCenter(zdc['url'], zdc['username'], zdc['token'])
     s3 = boto3.client("s3", aws_access_key_id=zdc['aws_access_key'], aws_secret_access_key=zdc['aws_secret'])
+    # load any previous zendesk activity on this source folder
+    zendesk_file_path = os.path.join(source_folder_path, ZENDESK_FILE)
+    zendesk_json_pre = read_zendesk_json(zendesk_file_path)
     aws_s3_bucket = zdc['aws_s3_bucket']
     zendesk_category_name = zdc['zendesk_category_name']
     logger.info(f"Category Name: {zendesk_category_name}")
-    # check if category exists on zendesk. If not error out.
-    zendesk_categories = hc.list_all_categories()
-    zendesk_category_id = find_category_id_in_list(zendesk_category_name, zendesk_categories)
-    if zendesk_category_id == NOT_FOUND:
-        logger.error("This Category does not exist on Zendesk. Please set it up via UI and retry")
-        exit(1)
-    else:
-        logger.info(f'Category_ID: {zendesk_category_id}')
+    check_category_on_zendesk(hc, zendesk_category_name) # will exit program if not found
     # find html files to send over
     html_files_list = gen_list_of_sections_and_html_files(source_folder_path, toc)
     print(html_files_list)
+    exit(1)
     # generate jupyter book
     st_code = gen_jupyter_book(source_folder_path)
     if st_code != OK_CODE:
@@ -231,9 +234,6 @@ def main(source_folder_path, section_name=None):
         exit(1)
     html_files_for_zendesk = handle_sections_on_zendesk(hc, html_files_list, zendesk_category_id)
     logger.info(f'html files to upload to Zendesk: \n {html_files_for_zendesk}')
-    # load any previous zendesk activity on this source folder
-    zendesk_file_path = os.path.join(source_folder_path, ZENDESK_FILE)
-    zendesk_json_pre = read_zendesk_json(zendesk_file_path)
     # now we iterate over list of files
     for f in html_files_for_zendesk:
         logger.info(f'Processing: {f}')
@@ -283,9 +283,11 @@ if __name__ == '__main__':
         A directory path where the source markdown files for the book reside
         A sample book is found at ./example/mynewbook/
         ''')
-    parser.add_argument("-sn", "--sectionname", help='Name of the Section to put the files in')
+    parser.add_argument("-a", "--archive", default=False, action='store_true',
+                        help='if True, it will archive any html pages on Zendesk.')
     args = parser.parse_args()
     book_dir_path = os.path.abspath(args.bookdir)
+    archive_book_flag = args.archive
     # set up logging
     book_dir_name = os.path.basename(book_dir_path)
     current_utc_datetime = datetime.utcnow()
@@ -299,4 +301,4 @@ if __name__ == '__main__':
         filemode='w',
         format=LOGGING_FORMAT
     )
-    main(book_dir_path)
+    main(book_dir_path, archive_book_flag)
