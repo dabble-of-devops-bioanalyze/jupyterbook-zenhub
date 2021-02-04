@@ -29,19 +29,18 @@ TOC_FILE = "_toc.yml"
 ZENDESK_FILE = "zendesk.json"
 EXCLUDED_HTML_FILENAMES = ['index', 'genindex', 'search'] # these files will not be carried over to Zendesk
 
-# ids for zendesk are hardcoded for now. Need to be made configurable via some API calls.
+# ids for zendesk are hardcoded for now. Can be made configurable via some API calls.
 ARTICLE_DICT =  {
     "article": {
         "body": "",
         "locale": "en-us",
-        "permission_group_id": 1326317,
+        "permission_group_id": 1326317, # should not change after Zendesk Account is setup initially.
         "title": "",
         "html_url": "",
-        "user_segment_id": 360000471977
+        "user_segment_id": 360000471977 # will change per user ID in config.cfg
     },
     "notify_subscribers": False
 }
-SECTION_ID = 360003315137
 
 
 def read_config_file(configfilepath=CONFIG_FILE): # will return a dict
@@ -187,6 +186,7 @@ def file_exists_on_zendesk(file_dict, zendesk_json_pre):
 
 def check_category_on_zendesk(hc, zendesk_category_name):
     # check if category exists on zendesk. If not error out.
+    logger.info(f"Category Name: {zendesk_category_name}")
     zendesk_categories = hc.list_all_categories()
     for cat in zendesk_categories["categories"]:
         if zendesk_category_name == cat["name"]:
@@ -194,6 +194,17 @@ def check_category_on_zendesk(hc, zendesk_category_name):
             return cat['id']
     logger.error(f"This Category: {zendesk_category_name}, does not exist on Zendesk. Please set it up via UI and retry")
     exit(1)
+
+def check_user_on_zendesk(hc):
+    user_info = hc.get_me()
+    user_id = user_info['user']['id']
+    if user_id is None:
+        logger.error(f'The user ID setup in config.cfg does not exist. Please check and try again')
+        exit(1)
+    user_role = user_info['user']['role']
+    if user_role != "admin":
+        logger.error(f'User role:{user_role}, is not an Admin Role. Please apply appropriate permissions and try again')
+        exit(1)
 
 def archive_book_from_zendesk(hc, zendesk_json_pre, zendesk_file_path):
     articles = zendesk_json_pre['articles'] 
@@ -216,38 +227,39 @@ def archive_book_from_zendesk(hc, zendesk_json_pre, zendesk_file_path):
 
 
 def main(source_folder_path, archive_book_flag):
-    # 0. Initialize Zendesk router
-    # 1. Generate the html from the markdown files.
-    # 2. Create a list of html files that need to be exported to zendesk
-    # 3. For each file:
-    #    a. extract only the relevant body portion that will be exported.
-    #    b. prepare payload () {}
-    #    c. Check if the file already exists on zendesk hc.
-    #        - If yes then use PUT
-    #        - If no then use POST
     # read TOC YAML file
     st_code, toc = read_toc_yaml(os.path.join(source_folder_path, TOC_FILE))
     if st_code is not OK_CODE:
         exit(1)
+
      # 0. Initialize Zendesk router & S3
     zdc = read_config_file()
     hc = HelpCenter(zdc['url'], zdc['username'], zdc['token'])
     s3 = boto3.client("s3", aws_access_key_id=zdc['aws_access_key'], aws_secret_access_key=zdc['aws_secret'])
+
+    # check if user exists on Zendesk and can do something on it.
+    check_user_on_zendesk(hc)
+
     # load any previous zendesk activity on this source folder
     zendesk_file_path = os.path.join(source_folder_path, ZENDESK_FILE)
     zendesk_json_pre = read_zendesk_json(zendesk_file_path)
+
     if archive_book_flag: # archive the book on Zendesk and exit OK.
         archive_book_from_zendesk(hc, zendesk_json_pre, zendesk_file_path)
+
+    # finish rest of the setup
     aws_s3_bucket = zdc['aws_s3_bucket']
     zendesk_category_name = zdc['zendesk_category_name']
-    logger.info(f"Category Name: {zendesk_category_name}")
     zendesk_category_id = check_category_on_zendesk(hc, zendesk_category_name) # will exit program if not found
+
     # find html files to send over
     html_files_list = gen_list_of_sections_and_html_files(source_folder_path, toc)
+
     # generate jupyter book
     gen_jupyter_book(source_folder_path)
     html_files_for_zendesk = handle_sections_on_zendesk(hc, html_files_list, zendesk_category_id)
     logger.info(f'html files to upload to Zendesk: \n {html_files_for_zendesk}')
+
     # now we iterate over list of files
     for f in html_files_for_zendesk:
         logger.info(f'Processing: {f}')
@@ -274,7 +286,6 @@ def main(source_folder_path, archive_book_flag):
             response_json = hc.update_article_translation(article_id, json.dumps(translation_dict), locale='en-us')
             f.update({'article_id': article_id})
             f.update({'article_html_url': article_html_url})
-
 
     # write html_files_for_zendesk to json
     current_utc_datetime = datetime.utcnow()

@@ -643,3 +643,9 @@ class HelpCenter(Base):
             labels_string = labels_string + i + ','
         url = self.domain + '/api/v2/help_center/articles.json?label_names=' + labels_string
         return self._page_gets(url, 'labels')
+
+    # User Information
+
+    def get_me(self):
+        url = self.domain + '/api/v2/users/me.json'
+        return self.get(url, self.email, self.password)
