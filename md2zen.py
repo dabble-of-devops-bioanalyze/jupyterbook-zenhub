@@ -29,7 +29,18 @@ TOC_FILE = "_toc.yml"
 ZENDESK_FILE = "zendesk.json"
 EXCLUDED_HTML_FILENAMES = ['index', 'genindex', 'search'] # these files will not be carried over to Zendesk
 
-# ids for zendesk are hardcoded for now. Can be made configurable via some API calls.
+# permission_group_id & user_segment_id for zendesk are hardcoded for testprepco@gmail.com user.
+# The same ids may be applicable to other users but there is no sure way to know. 
+# If the program fails as-is for a different user ID, do this:
+# 1. Create a dummy article on Zendesk. Note down its article_ID (provided in the URL).
+# 2. Make a call using python CLI (inside virtual environment): 
+#     from zendeskhc.HelpCenter import *
+#     hc = HelpCenter(url, username, token)
+#     response = hc.show_article(article_ID)
+# 3. Read these values off the "response".
+#     response['article']['permission_group_id']
+#     response['article']['user_segment_id']
+# 4. Edit these values in ARTICLE_DICT below.
 ARTICLE_DICT =  {
     "article": {
         "body": "",
@@ -37,7 +48,7 @@ ARTICLE_DICT =  {
         "permission_group_id": 1326317, # should not change after Zendesk Account is setup initially.
         "title": "",
         "html_url": "",
-        "user_segment_id": 360000471977 # will change per user ID in config.cfg
+        "user_segment_id": 360000471977 # may change per user ID in config.cfg
     },
     "notify_subscribers": False
 }

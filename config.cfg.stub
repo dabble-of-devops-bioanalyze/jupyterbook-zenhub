@@ -1,6 +1,6 @@
 # please add values for each variable and save the file as config.cfg
 [DEFAULT]
-username = 
+username = <email address>/token
 token = 
 url = https://dabbleofdevopshelp.zendesk.com
 zendesk_category_name = General
