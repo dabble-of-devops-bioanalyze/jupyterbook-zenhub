@@ -3,6 +3,7 @@ from zendeskhc.HelpCenter import HelpCenter
 from bs4 import BeautifulSoup as bs4
 import json
 import os
+import shutil
 import boto3
 import subprocess
 import configparser
@@ -263,7 +264,7 @@ def archive_book_from_zendesk(hc, zendesk_json_pre, zendesk_file_path):
     articles = zendesk_json_pre['articles'] 
     if len(articles) < 1:
         logger.info('No articles found in the zendesk.json file to Archive')
-        exit(0)
+        return
     for article in articles:
         article_id = article['article_id']
         html_file_path = article['html_file_path']
@@ -276,7 +277,13 @@ def archive_book_from_zendesk(hc, zendesk_json_pre, zendesk_file_path):
             logger.warning(f"Error occured in Archiving: {article_id}. HTTP Code = {status_code}")
     open(zendesk_file_path,'w').close() # will rewrite zendesk.json to zero bytes
     logger.info(f'Book archived at Zendesk. You can delete it manually from the Admin UI')
-    exit(0)
+
+def delete_local_html_of_book(source_folder_path):
+    build_folder_path = os.path.join(source_folder_path, "_build")
+    logger.info(f'Build Folder: {build_folder_path}')
+    if os.path.exists(build_folder_path):
+        logger.info(f'Removing old version of build folder: {build_folder_path}')
+        shutil.rmtree(build_folder_path)   
 
 
 def main(source_folder_path, archive_book_flag):
@@ -299,6 +306,8 @@ def main(source_folder_path, archive_book_flag):
 
     if archive_book_flag: # archive the book on Zendesk and exit OK.
         archive_book_from_zendesk(hc, zendesk_json_pre, zendesk_file_path)
+        delete_local_html_of_book(source_folder_path)
+        exit(0)
 
     # finish rest of the setup
     aws_s3_bucket = zdc['aws_s3_bucket']

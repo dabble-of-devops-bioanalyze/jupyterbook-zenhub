@@ -81,6 +81,8 @@ This does the following:
 
 1. File's attachments (images, videos) are uploaded to Amazon Web Services S3 bucket as defined in the environment variables.
 
+1. After the first pass on all files, Each file's links are evaluated in the 2nd pass and updated on zendesk.
+
 1. Information on uploaded files is saved in `zendesk.json` file in the source folder. It looks like this:
 
     ```json
@@ -108,5 +110,7 @@ This does the following:
 
 1. Archives each article found in the list of articles.
 
-1. Deletes all entries from `zendesk.json`.
+1. Deletes all entries from `zendesk.json`. (Essentially the file is reduced to 0 bytes)
+
+1. Deletes the `_build` sub-directory in the source folder.
 
