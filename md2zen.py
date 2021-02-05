@@ -130,7 +130,49 @@ def update_article_dict(html_file_path, s3, aws_s3_bucket, article_dict=ARTICLE_
         status = upload_to_aws_s3(s3, img_file_path, aws_s3_bucket, img_s3_file_key)
         # fix url to point to aws s3 instead of local path
         tag['src'] = AWS_URL_PREFIX + aws_s3_bucket + '/' + img_s3_file_key
-    article_dict['article']['body'] = msoup.prettify()
+    article_dict['article']['body'] = msoup.prettify(formatter='html5')
+    with open(html_file_path,'w') as oFile: # write the file back to disk
+        # formatter html to retain &nbsp; etc.
+        oFile.write(soup.prettify(formatter='html5'))
+        oFile.close() 
+    return article_dict
+
+def find_matching_url(url, html_files_for_zendesk):
+    html_url, rhs_url, lhs_url = url, "", ""
+    if '#' in url:
+        hash_loc = url.find('#')
+        lhs_url = url[:hash_loc]
+        rhs_url = url[hash_loc:]
+        dot_loc = lhs_url.find('.')
+        html_url = lhs_url[:dot_loc] + '.html'
+        
+    for item in html_files_for_zendesk:
+        if item['html_file_path'].endswith(html_url):
+            zendesk_url = item['article_html_url']
+            matching_url = zendesk_url + rhs_url
+            return matching_url
+    logger.warning(f'For {html_url}, Matching URL not found on Zendesk')
+    return ('#')
+
+def update_urls_in_article_dict(html_file_path, html_files_for_zendesk, article_dict=ARTICLE_DICT):
+    with open(html_file_path,'r') as f:
+        soup = bs4(f.read(),'html.parser')
+    article_dict['article']['title'] = soup.title.text
+    # extract out main content of the html page
+    msoup = soup.find(id="main-content")
+    a_tags = msoup.find_all('a')
+    for tag in a_tags:
+        a_url = tag['href']
+        if a_url.startswith('https://') or a_url.startswith('http://') or a_url.startswith('mailto:') or a_url.startswith('#'):
+            continue
+        else:
+            new_url = find_matching_url(a_url, html_files_for_zendesk)
+            tag['href'] = new_url
+    article_dict['article']['body'] = msoup.prettify(formatter='html5')
+    with open(html_file_path,'w') as oFile: # write the file back to disk
+        # formatter html to retain &nbsp; etc.
+        oFile.write(soup.prettify(formatter='html5'))
+        oFile.close() 
     return article_dict
 
 def find_section_name_in_list(section_name, sections_resp, category_id):
@@ -297,6 +339,19 @@ def main(source_folder_path, archive_book_flag):
             response_json = hc.update_article_translation(article_id, json.dumps(translation_dict), locale='en-us')
             f.update({'article_id': article_id})
             f.update({'article_html_url': article_html_url})
+    
+    # 2nd pass to fix URLs
+    for f in html_files_for_zendesk:
+        logger.info(f'Processing (2nd Pass): {f}')
+        article_dict = update_urls_in_article_dict(f['html_file_path'], html_files_for_zendesk)
+        translation_dict = {
+            "translation": {
+                "title": article_dict['article']['title'],
+                "body": article_dict['article']['body']
+            }
+        }
+        response_json = hc.update_article_translation(f['article_id'], json.dumps(translation_dict), locale='en-us')
+
 
     # write html_files_for_zendesk to json
     current_utc_datetime = datetime.utcnow()

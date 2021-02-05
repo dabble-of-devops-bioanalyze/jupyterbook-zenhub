@@ -51,9 +51,18 @@ def read_config_file(config): #returns a dict
 
 ## Links
 
-Here is a link to [markdown.md](markdown.md) file.
-
+Here is a link to [My 2nd File](myfile2.md) file.
 
 Here is a link to a [Using a directive section](markdown.md#using-a-directive).
 
-Here is another line.
+Here is a [mangled link](#)
+
+Here is a [http link](http://www.google.com)
+
+Here is a [https link](https://www.google.com)
+
+Here is a [mailto link](mailto:a@bc.com)
+
+Here is link to [json section](#json)
+
+Here is a link to [non-existent section](#abcd1)

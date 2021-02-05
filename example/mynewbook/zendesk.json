@@ -1,40 +1,40 @@
 {
-    "timestamp": "02-04-2021:18:25:24Z",
+    "timestamp": "02-05-2021:05:38:43Z",
     "articles": [
         {
             "section_name": "Announcements",
             "section_id": 360003315137,
             "html_file_path": "/Users/Ash/pydev/zenhub/example/mynewbook/_build/html/content.html",
-            "article_id": 360017515597,
-            "article_html_url": "https://dabbleofdevopshelp.zendesk.com/hc/en-us/articles/360017515597-Content-in-Jupyter-Book-My-sample-book"
+            "article_id": 360017663118,
+            "article_html_url": "https://dabbleofdevopshelp.zendesk.com/hc/en-us/articles/360017663118--Content-in-Jupyter-Book-My-sample-book-"
         },
         {
             "section_name": "Announcements",
             "section_id": 360003315137,
             "html_file_path": "/Users/Ash/pydev/zenhub/example/mynewbook/_build/html/notebooks.html",
-            "article_id": 360017660338,
-            "article_html_url": "https://dabbleofdevopshelp.zendesk.com/hc/en-us/articles/360017660338-Content-with-notebooks-My-sample-book"
+            "article_id": 360017517017,
+            "article_html_url": "https://dabbleofdevopshelp.zendesk.com/hc/en-us/articles/360017517017--Content-with-notebooks-My-sample-book-"
         },
         {
             "section_name": "Markdown Samples",
             "section_id": 360005036557,
             "html_file_path": "/Users/Ash/pydev/zenhub/example/mynewbook/_build/html/markdown.html",
-            "article_id": 360017660358,
-            "article_html_url": "https://dabbleofdevopshelp.zendesk.com/hc/en-us/articles/360017660358-Markdown-Files-My-sample-book"
+            "article_id": 360017517037,
+            "article_html_url": "https://dabbleofdevopshelp.zendesk.com/hc/en-us/articles/360017517037--Markdown-Files-My-sample-book-"
         },
         {
             "section_name": "Markdown Samples",
             "section_id": 360005036557,
             "html_file_path": "/Users/Ash/pydev/zenhub/example/mynewbook/_build/html/myfile1.html",
-            "article_id": 360017660378,
-            "article_html_url": "https://dabbleofdevopshelp.zendesk.com/hc/en-us/articles/360017660378-MD-Experiments-My-sample-book"
+            "article_id": 360017517057,
+            "article_html_url": "https://dabbleofdevopshelp.zendesk.com/hc/en-us/articles/360017517057--MD-Experiments-My-sample-book-"
         },
         {
             "section_name": "Markdown Samples",
             "section_id": 360005036557,
             "html_file_path": "/Users/Ash/pydev/zenhub/example/mynewbook/_build/html/myfile2.html",
-            "article_id": 360017660398,
-            "article_html_url": "https://dabbleofdevopshelp.zendesk.com/hc/en-us/articles/360017660398-My-2nd-File-My-sample-book"
+            "article_id": 360017663138,
+            "article_html_url": "https://dabbleofdevopshelp.zendesk.com/hc/en-us/articles/360017663138--My-2nd-File-My-sample-book-"
         }
     ]
 }
