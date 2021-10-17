@@ -1,3 +1,11 @@
-zenhub-token
-.idea
-**/.idea
+config.cfg
+bin/
+lib/
+include/
+**/_build/
+etc/
+share/
+jsons/
+.vscode/
+**/__pycache__/
+logs/
