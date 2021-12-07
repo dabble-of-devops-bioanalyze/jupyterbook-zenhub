@@ -8,7 +8,7 @@ class ZendeskError(Exception):
         self.value = value
 
     def __str__(self):
-        return repr(self.value)
+        return sys.repr(self.value)
 
 class Base:
     session = requests.Session()
@@ -20,7 +20,7 @@ class Base:
         response_raw = self.session.get(url)
         if response_raw.status_code == 429:
             time.sleep(response_raw.headers['Retry-After'])
-            return get(url, email, password)
+            return requests.get(url, email, password)
         else:
             if response_raw.headers['Content-Type'].startswith("application/json"): # sometimes, its UTF-8 instead of utf-8
                 response_json = json.loads(response_raw.content)
@@ -35,7 +35,7 @@ class Base:
 
         if response_raw.status_code == 429:
             time.sleep(response_raw.headers['Retry-After'])
-            return put(url, data, email, password)
+            return requests.put(url, data, email, password)
         else:
             if response_raw.headers['Content-Type'].startswith("application/json"):
                 response_json = json.loads(response_raw.content)
@@ -50,7 +50,7 @@ class Base:
         
         if response_raw.status_code == 429:
             time.sleep(response_raw.headers['Retry-After'])
-            return post(url, data, email, password)
+            return requests.post(url, data, email, password)
         else:
             if response_raw.headers['Content-Type'].startswith("application/json"): 
                 response_json = json.loads(response_raw.content)
@@ -63,7 +63,7 @@ class Base:
         response_raw = self.session.delete(url)
         if response_raw.status_code == 429:
             time.sleep(response_raw.headers['Retry-After'])
-            return delete(url, data, email, password)
+            return requests.delete(url, data, email, password)
         elif response_raw.status_code == 204: # HTTP Status for No Content
             return {'status_code': 204}
         elif response_raw.status_code == 404: # HTTP Status for Not Found
