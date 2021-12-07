@@ -8,6 +8,7 @@ class HelpCenter(Base):
         self.domain = domain
         self.email = email
         self.password = password
+        
 
     def _page_gets(self, url, combine_key):
         data = self.get(url, self.email, self.password)

@@ -20,6 +20,8 @@ ROOT_SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))  # top source direc
 AWS_URL_PREFIX = "https://s3.amazonaws.com/"
 
 
+  
+
 
 
 
@@ -54,7 +56,9 @@ ARTICLE_DICT =  {
         "permission_group_id": 1326317, # should not change after Zendesk Account is setup initially.
         "title": "",
         "html_url": "",
-        "user_segment_id": 360000471977 # may change per user ID in config.cfg
+        "user_segment_id": 360000471977, # may change per user ID in config.cfg
+        "label_names": "",
+        "draft": True,
     },
     "notify_subscribers": False
 }
@@ -237,15 +241,31 @@ def file_exists_on_zendesk(file_dict, zendesk_json_pre):
     return NOT_FOUND
 
 def check_category_on_zendesk(hc, zendesk_category_name):
-    # check if category exists on zendesk. If not error out.
+    # check if category exists on zendesk. If not create it.
     logger.info(f"Category Name: {zendesk_category_name}")
     zendesk_categories = hc.list_all_categories()
     for cat in zendesk_categories["categories"]:
         if zendesk_category_name == cat["name"]:
             logger.info(f"Category_ID: {cat['id']}")
             return cat['id']
-    logger.error(f"This Category: {zendesk_category_name}, does not exist on Zendesk. Please set it up via UI and retry")
-    exit(1)
+        
+          
+        
+        data_dict = {
+        "category": {
+            "position": 0, 
+            "locale": "en-us", 
+            "name": zendesk_category_name,
+        }
+        
+    }
+    try: 
+        resp = hc.create_category(json.dumps(data_dict))
+        logger.info(f'Created new Category on Zendesk:\n {resp}')
+        return resp['id']
+    except:
+        logger.error(f'Error in creating Category: {zendesk_category_name} on Zendesk')
+        return NOT_FOUND
 
 def check_user_on_zendesk(hc):
     user_info = hc.get_me()
@@ -291,21 +311,20 @@ def main(source_folder_path, archive_book_flag):
         exit(1)
 
     # 0. Initialize Zendesk router & S3
-    #"zdc = read_config_file()
 
-    # Set configuration variables.
-    os.environ['USERNAME'] = 'davidbacon@dabbleofdevops'
-    os.environ['API_TOKEN'] = 'XKYDZ'
-    os.environ['AWS_ACCESS_KEY'] = 'smee'
-    os.environ['AWS_SECRET_KEY'] = 'smoo'
-
+    
     App = Config()
-    App.set("username", os.environ.get('USERNAME','davidbacon@dabbleofdevops'))  
-    App.set("token",os.environ.get('API_TOKEN','XKYDZ'))
-    App.set("aws_access_key",os.environ.get('AWS_ACCESS_KEY','smee'))
-    App.set("aws_secret",os.environ.get('AWS_SECRET_KEY','smoo'))
+
+    # Set configuration variables as environment variables.
+    os.environ['USERNAME'] = App.get("username")
+    os.environ['API_TOKEN'] = App.get("token")
+    os.environ['URL'] = App.get("url")
+    os.environ['AWS_BUCKET'] = App.get("aws_s3_bucket")
+    os.environ['AWS_ACCESS_KEY'] = App.get("aws_access_key")
+    os.environ['AWS_SECRET_KEY'] = App.get("aws_secret")
+ 
     
-    
+   
 
     hc = HelpCenter(App.get("url"), App.get("username"), App.get("token"))
     s3 = boto3.client("s3", aws_access_key_id=App.get('aws_access_key'),aws_secret_access_key= App.get("aws_secret"))
