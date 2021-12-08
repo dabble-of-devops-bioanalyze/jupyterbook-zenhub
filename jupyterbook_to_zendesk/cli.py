@@ -7,7 +7,9 @@ from pprint import pprint
 import sys
 import os
 
-from .commands import build_jupyterbook, sync_to_zendesk
+from jupyterbook_to_zendesk.commands import build_jupyterbook, sync_to_zendesk
+
+# from .commands import build_jupyterbook, sync_to_zendesk
 
 
 @click.group()
@@ -26,7 +28,7 @@ def cli(ctx, debug, source_dir, destination_dir):
     click.echo(pprint(ctx.obj))
 
 
-@cli.command('build-jb')
+@cli.command("build-jb")
 @click.pass_context
 def command_build(ctx):
     """Console script for jupyterbook_to_zendesk."""
@@ -35,7 +37,7 @@ def command_build(ctx):
     build_jupyterbook.build(ctx)
 
 
-@cli.command('sync-jb-to-zendesk')  # @cli, not @click!
+@cli.command("sync-jb-to-zendesk")  # @cli, not @click!
 @click.pass_context
 def command_sync(ctx):
     sync_to_zendesk.sync()
