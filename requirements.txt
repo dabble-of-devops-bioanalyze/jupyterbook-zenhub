@@ -1,2 +1,2 @@
-jupyter-book==0.9.1
-boto3==1.16.63
+jupyter-book>=0.9.1
+boto3>=1.16.63

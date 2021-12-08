@@ -22,6 +22,7 @@ AWS_URL_PREFIX = "https://s3.amazonaws.com/"
 # setup logger
 LOG_FILE_DIR = os.path.join(ROOT_SOURCE_DIR,'logs')
 LOGGING_FORMAT = '%(name)s - %(levelname)s - %(message)s'
+logging.basicConfig(level='DEBUG')
 logger = logging.getLogger(__name__)
 
 
@@ -31,10 +32,10 @@ ZENDESK_FILE = "zendesk.json"
 EXCLUDED_HTML_FILENAMES = ['index', 'genindex', 'search'] # these files will not be carried over to Zendesk
 
 # permission_group_id & user_segment_id for zendesk are hardcoded for testprepco@gmail.com user.
-# The same ids may be applicable to other users but there is no sure way to know. 
+# The same ids may be applicable to other users but there is no sure way to know.
 # If the program fails as-is for a different user ID, do this:
 # 1. Create a dummy article on Zendesk. Note down its article_ID (provided in the URL).
-# 2. Make a call using python CLI (inside virtual environment): 
+# 2. Make a call using python CLI (inside virtual environment):
 #     from zendeskhc.HelpCenter import *
 #     hc = HelpCenter(url, username, token)
 #     response = hc.show_article(article_ID)
@@ -89,23 +90,53 @@ def gen_jupyter_book(source_folder_path, cwd=None):
 def gen_list_of_sections_and_html_files(source_folder_path, toc):
     html_files_list = [] # list of dicts
     html_folder_path = os.path.join(source_folder_path, "_build", "html")
-    for item in toc:
-        if 'part' in item.keys(): # will exclude intro file from the transfer to zendesk
-            section = item['part']
-            files = item['chapters']
-            for f in files:
-                filename = f['file']
+    example_toc = """
+    entries:
+        - file: examples/examples
+        entries:
+        - file: _templates/examples/fargate/{{cookiecutter.project_name}}/readme.md
+        - file: _templates/examples/fargate/{{cookiecutter.project_name}}/terraform.md
+    """
+
+    title = 'Title'
+    if 'title' in toc:
+        title = toc['title']
+
+    html_file_path = os.path.join(html_folder_path, toc['root'] + ".html")
+    html_files_list.append({'section_name': title, 'html_file_path': html_file_path})
+
+    for entry in toc['entries']:
+        if 'file' in entry:
+            filename = entry['file']
+            if 'title' in entry:
+                title = entry['title']
+            html_file_path = os.path.join(html_folder_path, filename + ".html")
+            html_files_list.append({'section_name': title, 'html_file_path': html_file_path})
+        if 'entries' in entry:
+            for entry_inner in entry['entries']:
+                filename = entry_inner['file']
+                if 'title' in entry:
+                    title = entry['title']
                 html_file_path = os.path.join(html_folder_path, filename + ".html")
-                html_files_list.append({'section_name': section, 'html_file_path': html_file_path})
+                html_files_list.append({'section_name': title, 'html_file_path': html_file_path})
+
+    # for item in toc['entries']:
+    #     if 'part' in item.keys(): # will exclude intro file from the transfer to zendesk
+    #         section = item['part']
+    #         files = item['chapters']
+    #         for f in files:
+    #             filename = f['file']
+    #             html_file_path = os.path.join(html_folder_path, filename + ".html")
+    #             html_files_list.append({'section_name': section, 'html_file_path': html_file_path})
     logger.info(f'Final List of html files to be sent to Zendesk: \n {html_files_list}')
     return html_files_list
 
 def upload_to_aws_s3(s3, local_file_path, bucket, s3_file_key):
     try:
         s3.upload_file(
-            local_file_path, 
-            bucket, 
-            s3_file_key, 
+            local_file_path,
+            bucket,
+            s3_file_key,
             ExtraArgs={'ACL': 'public-read'}
         )
         logger.info(f"{local_file_path}: Upload Successful")
@@ -135,7 +166,7 @@ def update_article_dict(html_file_path, s3, aws_s3_bucket, article_dict=ARTICLE_
     with open(html_file_path,'w') as oFile: # write the file back to disk
         # formatter html to retain &nbsp; etc.
         oFile.write(soup.prettify(formatter='html5'))
-        oFile.close() 
+        oFile.close()
     return article_dict
 
 def find_matching_url(url, html_files_for_zendesk):
@@ -146,7 +177,7 @@ def find_matching_url(url, html_files_for_zendesk):
         rhs_url = url[hash_loc:]
         dot_loc = lhs_url.find('.')
         html_url = lhs_url[:dot_loc] + '.html'
-        
+
     for item in html_files_for_zendesk:
         if item['html_file_path'].endswith(html_url):
             zendesk_url = item['article_html_url']
@@ -163,17 +194,19 @@ def update_urls_in_article_dict(html_file_path, html_files_for_zendesk, article_
     msoup = soup.find(id="main-content")
     a_tags = msoup.find_all('a')
     for tag in a_tags:
-        a_url = tag['href']
-        if a_url.startswith('https://') or a_url.startswith('http://') or a_url.startswith('mailto:') or a_url.startswith('#'):
-            continue
-        else:
-            new_url = find_matching_url(a_url, html_files_for_zendesk)
-            tag['href'] = new_url
+        # logger.debug(tag)
+        if 'href' in tag:
+            a_url = tag['href']
+            if a_url.startswith('https://') or a_url.startswith('http://') or a_url.startswith('mailto:') or a_url.startswith('#'):
+                continue
+            else:
+                new_url = find_matching_url(a_url, html_files_for_zendesk)
+                tag['href'] = new_url
     article_dict['article']['body'] = msoup.prettify(formatter='html5')
     with open(html_file_path,'w') as oFile: # write the file back to disk
         # formatter html to retain &nbsp; etc.
         oFile.write(soup.prettify(formatter='html5'))
-        oFile.close() 
+        oFile.close()
     return article_dict
 
 def find_section_name_in_list(section_name, sections_resp, category_id):
@@ -185,12 +218,12 @@ def find_section_name_in_list(section_name, sections_resp, category_id):
 def setup_section_on_zendesk(hc, section_name, zendesk_category_id):
     data_dict = {
         "section": {
-            "position": 0, 
-            "locale": "en-us", 
+            "position": 0,
+            "locale": "en-us",
             "name": section_name,
         }
     }
-    try: 
+    try:
         resp = hc.create_section(zendesk_category_id, json.dumps(data_dict), locale='en-us')
         logger.info(f'Created new section on Zendesk:\n {resp}')
         return resp
@@ -225,7 +258,7 @@ def read_zendesk_json(zendesk_file_path):
     try:
         with open(zendesk_file_path,'r') as f:
             zendesk_json_pre = json.loads(f.read())
-    except: # probably a new book so no file OR an empty file OR not a valid json file 
+    except: # probably a new book so no file OR an empty file OR not a valid json file
         zendesk_json_pre = {"timestamp": "","articles": []}
     return zendesk_json_pre
 
@@ -261,7 +294,7 @@ def check_user_on_zendesk(hc):
         exit(1)
 
 def archive_book_from_zendesk(hc, zendesk_json_pre, zendesk_file_path):
-    articles = zendesk_json_pre['articles'] 
+    articles = zendesk_json_pre['articles']
     if len(articles) < 1:
         logger.info('No articles found in the zendesk.json file to Archive')
         return
@@ -283,7 +316,7 @@ def delete_local_html_of_book(source_folder_path):
     logger.info(f'Build Folder: {build_folder_path}')
     if os.path.exists(build_folder_path):
         logger.info(f'Removing old version of build folder: {build_folder_path}')
-        shutil.rmtree(build_folder_path)   
+        shutil.rmtree(build_folder_path)
 
 
 def main(source_folder_path, archive_book_flag):
@@ -348,7 +381,7 @@ def main(source_folder_path, archive_book_flag):
             response_json = hc.update_article_translation(article_id, json.dumps(translation_dict), locale='en-us')
             f.update({'article_id': article_id})
             f.update({'article_html_url': article_html_url})
-    
+
     # 2nd pass to fix URLs
     for f in html_files_for_zendesk:
         logger.info(f'Processing (2nd Pass): {f}')
@@ -372,15 +405,16 @@ def main(source_folder_path, archive_book_flag):
 
 if __name__ == '__main__':
     import argparse
+    logger.info('Uploading to zendesk')
     parser = argparse.ArgumentParser(
         description="This utility creates jupyterbook html from .md files and uploads them to zendesk OR archives them on zendesk",
-        epilog=''' 
-    Examples of the command are: 
+        epilog='''
+    Examples of the command are:
         To Build (or Update) a book on Zendesk:
             ./md2zen.py <path/to/bookdirectory/>
         To Archive a book's pages on Zendesk:
             ./md2zen.py <path/to/bookdirectory/> -a
-    ''', formatter_class=argparse.RawTextHelpFormatter) 
+    ''', formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("bookdir",
     help='''
     A directory path where the source markdown files for the book reside.
