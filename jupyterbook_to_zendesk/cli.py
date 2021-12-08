@@ -7,7 +7,6 @@ from pprint import pprint
 import sys
 import os
 
-# from jupyterbook_to_zendesk.commands import build_jupyterbook, sync_to_zendesk
 from .commands import build_jupyterbook, sync_to_zendesk
 
 

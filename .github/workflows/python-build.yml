@@ -1,0 +1,25 @@
+
+name: Python Build 
+on: [push]
+
+env:
+  PROJECT_SLUG: "aws-parallelcluster-wrapper"
+  DOCKER_ORG: "dabbleofdevops"
+  GITHUB_SHA: ${{ github.sha }}
+  GITHUB_REF: ${{ github.ref }}
+
+jobs:
+  python-build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        # in this example, there is a newer version already installed, 3.7.7, so the older version will be downloaded
+        python-version: [ '3.8', '3.9']
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+        architecture: 'x64'
+    - run: pip install wheel; pip install -r requirements.txt -r requirements_dev.txt; python setup.py build; python setup.py install; awsp --help
