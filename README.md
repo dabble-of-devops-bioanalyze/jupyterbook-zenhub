@@ -46,7 +46,7 @@ aws_secret = XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ```
 
 ## Creating the book
-
+/
 Run the script: `./md2zen.py /example/mynewbook/`.
 
 This does the following:

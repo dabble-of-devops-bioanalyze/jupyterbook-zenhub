@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 from zendeskhc.HelpCenter import HelpCenter
+from config import Config
 from bs4 import BeautifulSoup as bs4
 import json
 import os
 import shutil
 import boto3
 import subprocess
-import configparser
 import yaml
 from glob import glob
 import logging
@@ -19,6 +19,13 @@ NOT_FOUND = -1
 ROOT_SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))  # top source directory
 AWS_URL_PREFIX = "https://s3.amazonaws.com/"
 
+
+  
+
+
+
+
+
 # setup logger
 LOG_FILE_DIR = os.path.join(ROOT_SOURCE_DIR,'logs')
 LOGGING_FORMAT = '%(name)s - %(levelname)s - %(message)s'
@@ -26,7 +33,7 @@ logging.basicConfig(level='DEBUG')
 logger = logging.getLogger(__name__)
 
 
-CONFIG_FILE = 'config.cfg'
+
 TOC_FILE = "_toc.yml"
 ZENDESK_FILE = "zendesk.json"
 EXCLUDED_HTML_FILENAMES = ['index', 'genindex', 'search'] # these files will not be carried over to Zendesk
@@ -50,18 +57,13 @@ ARTICLE_DICT =  {
         "permission_group_id": 1326317, # should not change after Zendesk Account is setup initially.
         "title": "",
         "html_url": "",
-        "user_segment_id": 360000471977 # may change per user ID in config.cfg
+        "user_segment_id": 360000471977, # may change per user ID in config.cfg
+        "label_names": "",
+        "draft": True,
     },
     "notify_subscribers": False
 }
 
-
-def read_config_file(configfilepath=CONFIG_FILE): # will return a dict
-    config = configparser.ConfigParser()
-    config.read(CONFIG_FILE)
-    cfg = config['DEFAULT'] # KISS for now.
-    config_dict = {key:cfg[key] for key in cfg.keys()}
-    return config_dict
 
 def read_toc_yaml(yaml_file):
     logger.info(f'Reading TOC yaml file: {yaml_file}')
@@ -272,15 +274,31 @@ def file_exists_on_zendesk(file_dict, zendesk_json_pre):
     return NOT_FOUND
 
 def check_category_on_zendesk(hc, zendesk_category_name):
-    # check if category exists on zendesk. If not error out.
+    # check if category exists on zendesk. If not create it.
     logger.info(f"Category Name: {zendesk_category_name}")
     zendesk_categories = hc.list_all_categories()
     for cat in zendesk_categories["categories"]:
         if zendesk_category_name == cat["name"]:
             logger.info(f"Category_ID: {cat['id']}")
             return cat['id']
-    logger.error(f"This Category: {zendesk_category_name}, does not exist on Zendesk. Please set it up via UI and retry")
-    exit(1)
+        
+          
+        
+        data_dict = {
+        "category": {
+            "position": 0, 
+            "locale": "en-us", 
+            "name": zendesk_category_name,
+        }
+        
+    }
+    try: 
+        resp = hc.create_category(json.dumps(data_dict))
+        logger.info(f'Created new Category on Zendesk:\n {resp}')
+        return resp['id']
+    except:
+        logger.error(f'Error in creating Category: {zendesk_category_name} on Zendesk')
+        return NOT_FOUND
 
 def check_user_on_zendesk(hc):
     user_info = hc.get_me()
@@ -325,11 +343,26 @@ def main(source_folder_path, archive_book_flag):
     if st_code is not OK_CODE:
         exit(1)
 
-     # 0. Initialize Zendesk router & S3
-    zdc = read_config_file()
-    hc = HelpCenter(zdc['url'], zdc['username'], zdc['token'])
-    s3 = boto3.client("s3", aws_access_key_id=zdc['aws_access_key'], aws_secret_access_key=zdc['aws_secret'])
+    # 0. Initialize Zendesk router & S3
 
+    
+    App = Config()
+
+    # Set configuration variables as environment variables.
+    os.environ['USERNAME'] = App.get("username")
+    os.environ['API_TOKEN'] = App.get("token")
+    os.environ['URL'] = App.get("url")
+    os.environ['AWS_BUCKET'] = App.get("aws_s3_bucket")
+    os.environ['AWS_ACCESS_KEY'] = App.get("aws_access_key")
+    os.environ['AWS_SECRET_KEY'] = App.get("aws_secret")
+ 
+    
+   
+
+    hc = HelpCenter(App.get("url"), App.get("username"), App.get("token"))
+    s3 = boto3.client("s3", aws_access_key_id=App.get('aws_access_key'),aws_secret_access_key= App.get("aws_secret"))
+
+    
     # check if user exists on Zendesk and can do something on it.
     check_user_on_zendesk(hc)
 
@@ -342,9 +375,10 @@ def main(source_folder_path, archive_book_flag):
         delete_local_html_of_book(source_folder_path)
         exit(0)
 
-    # finish rest of the setup
-    aws_s3_bucket = zdc['aws_s3_bucket']
-    zendesk_category_name = zdc['zendesk_category_name']
+    
+
+    aws_s3_bucket = App.get("aws_s3_bucket")
+    zendesk_category_name = App.get('zendesk_category_name')
     zendesk_category_id = check_category_on_zendesk(hc, zendesk_category_name) # will exit program if not found
 
     # find html files to send over

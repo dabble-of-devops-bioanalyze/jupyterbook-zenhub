@@ -1,9 +1,0 @@
-# please add values for each variable and save the file as config.cfg
-[DEFAULT]
-username = <email address>/token
-token = 
-url = https://dabbleofdevopshelp.zendesk.com
-zendesk_category_name = General
-aws_s3_bucket = zendesk.dabbleofdevops.com
-aws_access_key = 
-aws_secret = 
