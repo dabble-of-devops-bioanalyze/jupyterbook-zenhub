@@ -1,2 +1,5 @@
-jupyter-book>=0.9.1
+jupyter-book>=0.12.0
 boto3>=1.16.63
+cookiecutter
+GitPython
+Click

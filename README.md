@@ -1,7 +1,32 @@
+# Jupyterbook to Zendesk
+
+```{image} https://img.shields.io/pypi/v/jupyterbook_to_zendesk.svg
+:target: https://pypi.python.org/pypi/jupyterbook_to_zendesk
+```
+
+```{image} https://img.shields.io/travis/jerowe/jupyterbook_to_zendesk.svg
+:target: https://travis-ci.com/jerowe/jupyterbook_to_zendesk
+```
+
+```{image} https://readthedocs.org/projects/jupyterbook-to-zendesk/badge/?version=latest
+:alt: Documentation Status
+:target: https://jupyterbook-to-zendesk.readthedocs.io/en/latest/?version=latest
+```
+
+```{image} https://pyup.io/repos/github/jerowe/jupyterbook_to_zendesk/shield.svg
+:alt: Updates
+:target: https://pyup.io/repos/github/jerowe/jupyterbook_to_zendesk/
+```
+
+Taking some jupyterbooks and slinging them onto zendesk.
+
+- Free software: Apache Software License 2.0
+- Documentation: <https://jupyterbook-to-zendesk.readthedocs.io>.
+
 ## Installation & Quickstart
 
 1. Pre-Requisites
-    
+
     a. MacOS/Linux is recommended
 
     b. Python3.8 should be pre-installed
@@ -10,7 +35,7 @@
 
     `git clone <address to this repo> <folder_name>`
 
-1. Create a virtual environment to keep things isolated 
+1. Create a virtual environment to keep things isolated
 
     `python3 -m venv <folder_name>`
 1. Go to the directory where the code is cloned into.
@@ -23,7 +48,7 @@
 
 1. Run the script
 
-    `./md2zen.py -h` 
+    `./md2zen.py -h`
 
 
 ## Logging
@@ -56,7 +81,7 @@ This does the following:
     `_toc.yml` is like this:
 
     ```yml
-    - file: intro 
+    - file: intro
     - part: Announcements # will be made into a Zendesk section if it doesn't exist.
     chapters:
     - file: content
@@ -114,3 +139,13 @@ This does the following:
 
 1. Deletes the `_build` sub-directory in the source folder.
 
+
+
+- TODO
+
+## Credits
+
+This package was created with [Cookiecutter] and the [audreyr/cookiecutter-pypackage] project template.
+
+[audreyr/cookiecutter-pypackage]: https://github.com/audreyr/cookiecutter-pypackage
+[cookiecutter]: https://github.com/audreyr/cookiecutter
