@@ -9,3 +9,9 @@ jsons/
 .vscode/
 **/__pycache__/
 logs/
+logs/**
+
+# Credentials
+.aws
+**/.aws
+.aws/**

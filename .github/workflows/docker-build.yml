@@ -1,0 +1,35 @@
+name: Docker Build
+on: [push]
+
+env:
+  PROJECT_SLUG: "jupyterbook-to-zendesk"
+  DOCKER_ORG: "dabbleofdevops"
+  GITHUB_SHA: ${{ github.sha }}
+  GITHUB_REF: ${{ github.ref }}
+
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set Job Environmental Variables 
+        run: |
+          CALVER="$( date -u '+%Y.%m.%d' )"
+          SHA7="${GITHUB_SHA::7}"
+          IMAGE_SPEC="${DOCKER_ORG}/${PROJECT_SLUG}:${DOCKER_TAG}"
+          echo "CALVER=${CALVER}" >> $GITHUB_ENV
+          echo "DOCKER_TAG=${DOCKER_TAG}" >> $GITHUB_ENV
+          echo "IMAGE_SPEC=${IMAGE_SPEC}" >> $GITHUB_ENV
+      - name: Build and Publish to DockerHub
+        uses: elgohr/Publish-Docker-Github-Action@2.12
+        with:
+          name: ${{env.DOCKER_ORG}}/${{env.PROJECT_SLUG}}
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          # Should this be tag_names?
+          tags: "latest, ${{env.CALVER}}, ${{env.DOCKER_TAG}}"
+      - name: Test for CLI
+        run: |
+          make docker/test/run-cli
+          make docker/test/pytest
