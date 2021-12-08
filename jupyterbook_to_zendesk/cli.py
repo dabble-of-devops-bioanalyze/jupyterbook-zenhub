@@ -1,13 +1,12 @@
 """Console script for jupyterbook_to_zendesk."""
-import sys
-import click
 import os
+import sys
 from pprint import pprint
 
-import sys
-import os
+import click
 
-from jupyterbook_to_zendesk.commands import build_jupyterbook, sync_to_zendesk
+from jupyterbook_to_zendesk.commands import build_jupyterbook
+from jupyterbook_to_zendesk.commands import sync_to_zendesk
 
 # from .commands import build_jupyterbook, sync_to_zendesk
 
