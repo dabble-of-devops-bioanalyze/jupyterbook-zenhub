@@ -1,9 +1,9 @@
 
-name: Python Build 
+name: Python Build
 on: [push]
 
 env:
-  PROJECT_SLUG: "aws-parallelcluster-wrapper"
+  PROJECT_SLUG: "jupyterbook-zenhub"
   DOCKER_ORG: "dabbleofdevops"
   GITHUB_SHA: ${{ github.sha }}
   GITHUB_REF: ${{ github.ref }}
@@ -22,4 +22,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         architecture: 'x64'
-    - run: pip install wheel; pip install -r requirements.txt -r requirements_dev.txt; python setup.py build; python setup.py install; awsp --help
+    - run: |
+        make clean
+        make install
+        jupyterbook-to-zendesk --help

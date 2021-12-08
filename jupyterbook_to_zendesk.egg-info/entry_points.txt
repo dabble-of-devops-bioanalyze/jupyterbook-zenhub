@@ -1,0 +1,3 @@
+[console_scripts]
+jupyterbook-to-zendesk = jupyterbook_to_zendesk.cli:main
+
