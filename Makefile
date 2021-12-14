@@ -89,6 +89,7 @@ dist: clean ## builds source and wheel package
 install: clean ## install the package to the active Python's site-packages
 	python setup.py build; python setup.py install
 
+
 docker/build:
 	$(MAKE) clean
 	docker build -t dabbleofdevops/jb-to-zendesk .
@@ -113,3 +114,10 @@ docker/shell:
 		-v $(shell pwd):/usr/src/app \
 		dabbleofdevops/jb-to-zendesk bash
 
+# Processes to help with CI/CD
+# Install to a clean environment
+ci/docker/install:
+	docker run --rm -it \
+		-v $(shell pwd):/usr/src/app/ \
+		-w /usr/src/app \
+		python:3.8 bash -c "make clean; make install"

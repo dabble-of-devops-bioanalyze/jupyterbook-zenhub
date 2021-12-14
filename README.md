@@ -139,6 +139,18 @@ This does the following:
 
 1. Deletes the `_build` sub-directory in the source folder.
 
+## Development
+
+```
+git clone https://github.com/dabble-of-devops-bioanalyze/jupyterbook_to_zendesk
+cd jupyterbook_to_zendesk
+export PYTHONPATH=$(pwd)
+```
+
+```python
+import jupyterbook_to_zendesk
+help(jupyterbook_to_zendesk)
+```
 
 
 - TODO
