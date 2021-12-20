@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from jupyterbook_to_zendesk.zendeskhc.HelpCenter import HelpCenter
-from config import Config
+from jupyterbook_to_zendesk.config import Config
 from bs4 import BeautifulSoup as bs4
 import json
 import os

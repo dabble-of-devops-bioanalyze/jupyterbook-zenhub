@@ -1,14 +1,14 @@
 import requests
 import json
 import sys
-from zendeskhc.ZendeskBase import *
+from jupyterbook_to_zendesk.zendeskhc.ZendeskBase import *
 
 class HelpCenter(Base):
     def __init__(self, domain, email=None, password=None):
         self.domain = domain
         self.email = email
         self.password = password
-        
+
 
     def _page_gets(self, url, combine_key):
         data = self.get(url, self.email, self.password)
@@ -403,7 +403,7 @@ class HelpCenter(Base):
     def list_posts_by_topic(self, topic_id, options=None):
         option_string = self._generate_options(options)
         url = self.domain + '/api/v2/community/topics/{id}/posts.json' + option_string
-        url = url.format(id=topic_id) 
+        url = url.format(id=topic_id)
         return self._page_gets(url, 'posts')
 
     def list_posts_by_user(self, user_id, options=None):
