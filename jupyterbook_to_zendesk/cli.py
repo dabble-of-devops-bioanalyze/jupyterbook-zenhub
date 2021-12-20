@@ -8,8 +8,6 @@ import click
 from jupyterbook_to_zendesk.commands import build_jupyterbook
 from jupyterbook_to_zendesk.commands import sync_to_zendesk
 
-# from .commands import build_jupyterbook, sync_to_zendesk
-
 
 @click.group()
 @click.pass_context

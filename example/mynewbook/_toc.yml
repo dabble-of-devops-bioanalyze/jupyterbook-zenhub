@@ -1,28 +1,12 @@
-# Table of contents
-# A sample book structure is provided below. It follows this format:
-# -file: <intro>
-# - part: <Zendesk Section Name1>
-#   chapters:
-#   - file: <Markdown File11>
-#   - file: <Markdown File12> .....
-# - part: <Zendesk Section Name2>
-#   chapters:
-#   - file: <Markdown File21>
-#   - file: <Markdown File22>
-#   - file: <Markdown File23> .....
-# - part: .....
-
-# Top level file Needed to build the book else JB will error out. 
-# The file can just contain a L1 title like "# Introduction". 
-# It won't make it to Zendesk
-- file: intro 
-- part: Announcements # will be made into a Zendesk section if it doesn't exist.
+format: jb-book
+root: intro
+parts:
+- caption: Announcements
   chapters:
   - file: content
   - file: notebooks
-- part: Markdown Samples # will be made into a Zendesk section if it doesn't exist.
+- caption: Markdown Samples
   chapters:
   - file: markdown
   - file: myfile1
   - file: myfile2
-

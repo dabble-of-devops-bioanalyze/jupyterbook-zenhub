@@ -12,6 +12,7 @@ import yaml
 from glob import glob
 import logging
 from datetime import datetime
+from pprint import pprint
 
 
 ERROR_CODE = 1
@@ -91,11 +92,22 @@ def gen_jupyter_book(source_folder_path, cwd=None):
 def gen_list_of_sections_and_html_files(source_folder_path, toc):
     html_files_list = []  # list of dicts
     html_folder_path = os.path.join(source_folder_path, "_build", "html")
-    for item in toc:
+    pprint(toc)
+
+    # Add the root
+    html_file_path = os.path.join(html_folder_path, toc['root'] + ".html")
+    html_files_list.append(
+                {"section_name": 'Introduction', "html_file_path": html_file_path}
+    )
+
+    parts = toc["parts"]
+
+    for item in parts:
         if (
-            "part" in item.keys()
+            "chapters" in item.keys()
         ):  # will exclude intro file from the transfer to zendesk
-            section = item["part"]
+            # section = item["part"]
+            section = item["caption"]
             files = item["chapters"]
             for f in files:
                 filename = f["file"]
@@ -103,6 +115,7 @@ def gen_list_of_sections_and_html_files(source_folder_path, toc):
                 html_files_list.append(
                     {"section_name": section, "html_file_path": html_file_path}
                 )
+    logger.info(pprint(html_files_list))
     logger.info(f"Final List of html files to be sent to Zendesk: \n {html_files_list}")
     return html_files_list
 
@@ -222,8 +235,10 @@ def handle_sections_on_zendesk(hc, html_files_list, zendesk_category_id):
     # if not, will create the section on Zendesk
     # will update
     sections_resp = hc.list_all_sections()
-    logger.info(sections_resp)
+
     html_files_for_zendesk = []
+
+    logger.info(sections_resp)
     for item in html_files_list:
         section_name = item["section_name"]
         section_id = find_section_name_in_list(
@@ -240,8 +255,10 @@ def handle_sections_on_zendesk(hc, html_files_list, zendesk_category_id):
                 )
                 exit(1)
             else:
+
                 sections_resp["sections"].append(section_resp["section"])
                 section_id = section_resp["section"]["id"]
+
         html_files_for_zendesk.append(
             {
                 "section_name": item["section_name"],

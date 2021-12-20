@@ -18,18 +18,18 @@ class Base:
     def get(self, url, email=None, password=None):
         self.session.auth = (email, password)
         response_raw = self.session.get(url)
-        
+
         if response_raw.status_code == 429:
             time.sleep(response_raw.headers['Retry-After'])
             return get(url, email, password)
         else:
             if response_raw.headers['Content-Type'].startswith("application/json"): # sometimes, its UTF-8 instead of utf-8
                 response_json = json.loads(response_raw.content)
-                
+
                 return response_json
-                
+
             else:
-                
+
                 return None
 
     def put(self, url, data, email=None, password=None):
@@ -51,12 +51,12 @@ class Base:
         self.session.auth = (email, password)
         self.session.headers = {'Content-Type': 'application/json'}
         response_raw = self.session.post(url, data)
-        
+
         if response_raw.status_code == 429:
             time.sleep(response_raw.headers['Retry-After'])
             return post(url, data, email, password)
         else:
-            if response_raw.headers['Content-Type'].startswith("application/json"): 
+            if response_raw.headers['Content-Type'].startswith("application/json"):
                 response_json = json.loads(response_raw.content)
                 return response_json
             else:

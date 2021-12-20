@@ -122,3 +122,4 @@ ENV/
 # IDE settings
 .vscode/
 .idea/
+config.cfg

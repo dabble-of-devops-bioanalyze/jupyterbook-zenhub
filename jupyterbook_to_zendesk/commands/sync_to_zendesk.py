@@ -80,7 +80,7 @@ def sync(ctx):
 
     # 2nd pass to fix URLs
     for f in md.html_files_for_zendesk:
-        logger.info(f"Processing (2nd Pass): {f}")
+        logging.info(f"Processing (2nd Pass): {f}")
         article_dict = md.update_urls_in_article_dict(
             f["html_file_path"], md.html_files_for_zendesk
         )
