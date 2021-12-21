@@ -70,7 +70,6 @@ def sync(ctx):
         logger.exception(e)
         exit(1)
 
-
     html_files_for_zendesk = md.handle_sections_on_zendesk(
         hc=hc, html_files_list=html_files_for_zendesk, zendesk_category_id=category_id
     )
@@ -88,12 +87,16 @@ def sync(ctx):
         # article exists on zendesk
         # if article with same title and section_id is found
         # then article exists
-        logger.info('Checking to see if article exists')
-        article_info = md.article_exists(articles = zendesk_json_pre, title=article_dict['article']['title'], section_id = section_id)
-        logger.info(f'Article Exists: {cpprint(article_info)}')
+        logger.info("Checking to see if article exists")
+        article_info = md.article_exists(
+            articles=zendesk_json_pre,
+            title=article_dict["article"]["title"],
+            section_id=section_id,
+        )
+        logger.info(f"Article Exists: {cpprint(article_info)}")
 
         if not article_info:
-            logger.info('Creating the article')
+            logger.info("Creating the article")
             response_json = hc.create_article(section_id, json.dumps(article_dict))
             article_id = response_json["article"]["id"]
             f.update({"article_id": article_id})
@@ -101,7 +104,7 @@ def sync(ctx):
             f.update({"article_html_url": article_html_url})
             md.logger.info(f"Article ID: {article_id}, Article URL: {article_html_url}")
         else:  # update_article
-            logger.info('Updating the article')
+            logger.info("Updating the article")
             article_id = article_info["id"]
             article_html_url = article_info["html_url"]
             translation_dict = {

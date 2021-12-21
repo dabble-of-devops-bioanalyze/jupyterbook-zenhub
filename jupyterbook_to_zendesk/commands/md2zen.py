@@ -209,8 +209,8 @@ def soup_find_labels(soup):
     element = soup.find("meta", {"name": "labels"})
     labels = []
     if element:
-        if 'content' in element:
-            t_labels = element['content'].split(',')
+        if "content" in element:
+            t_labels = element["content"].split(",")
             for label in t_labels:
                 labels.append(label.strip())
     return labels

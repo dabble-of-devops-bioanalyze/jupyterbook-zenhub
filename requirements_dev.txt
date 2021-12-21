@@ -7,4 +7,6 @@ tox
 coverage
 twine
 pytest
+pytest-watch
 black
+black[jupyter]

@@ -9,6 +9,7 @@ from jupyterbook_to_zendesk.commands import build_jupyterbook
 from jupyterbook_to_zendesk.commands import sync_to_zendesk
 from jupyterbook_to_zendesk.logging import logger
 
+
 @click.group()
 @click.pass_context
 @click.option("--debug/--no-debug", default=False)

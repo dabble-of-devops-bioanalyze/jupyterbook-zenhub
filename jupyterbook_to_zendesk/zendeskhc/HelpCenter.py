@@ -80,8 +80,6 @@ class HelpCenter(Base):
         url = url.format(id=section_id)
         return self._page_gets(url, "articles")
 
-
-
     def list_articles_by_user(self, user_id, options=None):
         option_string = self._generate_options(options)
         url = (

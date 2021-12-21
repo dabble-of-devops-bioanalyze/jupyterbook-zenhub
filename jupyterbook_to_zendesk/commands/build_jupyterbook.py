@@ -17,7 +17,6 @@ import os
 from jupyterbook_to_zendesk.logging import logger
 
 
-
 def build(ctx):
     """Build the jupyterbook"""
 

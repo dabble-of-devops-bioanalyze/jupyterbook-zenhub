@@ -55,9 +55,6 @@ lint/black: ## check style with black
 
 lint: lint/flake8 lint/black ## check style
 
-test: ## run tests quickly with the default Python
-	pytest -s
-
 test-all: ## run tests on every Python version with tox
 	tox
 
@@ -89,6 +86,17 @@ dist: clean ## builds source and wheel package
 install: clean ## install the package to the active Python's site-packages
 	python setup.py build; python setup.py install
 
+install/dev: clean
+	pip install -r requirements.txt -r requirements_dev.txt
+	python setup.py build; python setup.py install
+
+test: ## run tests quickly with the default Python
+	$(MAKE) install/dev
+	pytest -s
+
+test/watch: ## run tests quickly with the default Python
+	$(MAKE) install/dev
+	pwt .
 
 docker/build:
 	$(MAKE) clean
@@ -98,14 +106,29 @@ docker/build/clean:
 	$(MAKE) clean
 	docker build --no-cache -t dabbleofdevops/jb-to-zendesk .
 
-docker/test/run-cli:
-	$(MAKE) build-docker-clean
-	docker run --rm -it dabbleofdevops/jb-to-zendesk bash -c "jupyterbook-to-zendesk"
+format:
+	black .
 
-docker/test/pytest:
-	$(MAKE) build-docker-clean
+docker/format:
 	docker run --rm -it \
 		-v $(shell pwd):/usr/src/app \
+		-w /usr/src/app \
+		dabbleofdevops/jb-to-zendesk bash -c "make format"
+
+docker/test/run-cli:
+	$(MAKE) docker/build/clean
+	docker run --rm -it dabbleofdevops/jb-to-zendesk bash -c "jupyterbook-to-zendesk"
+
+docker/test/pytest/watch:
+	docker run --rm -it \
+		-v $(shell pwd):/usr/src/app \
+		-w /usr/src/app \
+		dabbleofdevops/jb-to-zendesk bash -c "make test/watch"
+
+docker/test/pytest:
+	docker run --rm -it \
+		-v $(shell pwd):/usr/src/app \
+		-w /usr/src/app \
 		dabbleofdevops/jb-to-zendesk bash -c "make test"
 
 docker/shell:
@@ -113,6 +136,12 @@ docker/shell:
 	docker run --rm -it \
 		-v $(shell pwd):/usr/src/app \
 		dabbleofdevops/jb-to-zendesk bash
+
+ci/docker/install/dev:
+	docker run --rm -it \
+		-v $(shell pwd):/usr/src/app/ \
+		-w /usr/src/app \
+		python:3.8 bash -c "make clean; make install/dev"
 
 # Processes to help with CI/CD
 # Install to a clean environment
