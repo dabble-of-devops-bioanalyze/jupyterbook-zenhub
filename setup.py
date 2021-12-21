@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-
 """The setup script."""
-
-from setuptools import setup, find_packages
+from setuptools import find_packages
+from setuptools import setup
 
 with open("README.md") as readme_file:
     readme = readme_file.read()
@@ -15,9 +14,7 @@ with open("requirements.txt") as requirements_file:
 
 # requirements = ['Click>=7.0', ]
 
-test_requirements = [
-    "pytest>=3",
-]
+test_requirements = ["pytest>=3"]
 
 setup(
     author="Jillian Rowe",
@@ -35,9 +32,7 @@ setup(
     ],
     description="Taking some jupyterbooks and slinging them onto zendesk.",
     entry_points={
-        "console_scripts": [
-            "jupyterbook-to-zendesk=jupyterbook_to_zendesk.cli:main",
-        ],
+        "console_scripts": ["jupyterbook-to-zendesk=jupyterbook_to_zendesk.cli:main"]
     },
     install_requires=requirements,
     license="Apache Software License 2.0",

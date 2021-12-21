@@ -106,7 +106,16 @@ docker/build/clean:
 	$(MAKE) clean
 	docker build --no-cache -t dabbleofdevops/jb-to-zendesk .
 
+pre-commit/init:
+	pre-commit install-hooks
+	pre-commit clean
+	pre-commit install
+	pre-commit install-hooks
+	precommit hooks installation
+
+
 format:
+	pre-commit run --all-files
 	black .
 
 docker/format:
@@ -150,3 +159,17 @@ ci/docker/install:
 		-v $(shell pwd):/usr/src/app/ \
 		-w /usr/src/app \
 		python:3.8 bash -c "make clean; make install"
+
+example:
+	cd example/mynewbook
+	jupyterbook-to-zendesk -s . -d . build-jb
+	jupyterbook-to-zendesk -s . -d . sync-jb-to-zendesk
+	livereload _build/html/ -p 8000
+
+ci/docker/example:
+	$(MAKE) ci/docker/install/dev
+	docker run --rm -it \
+		-v $(shell pwd):/usr/src/app/ \
+		-w /usr/src/app \
+		-p 8000:8000 \
+		python:3.8 bash -c "make dev/install; make example"

@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
-
-from jupyterbook_to_zendesk.zendeskhc.HelpCenter import HelpCenter
-from jupyterbook_to_zendesk.config import Config
-from bs4 import BeautifulSoup as bs4
 import json
+import logging
 import os
 import shutil
-import boto3
 import subprocess
-import yaml
-from glob import glob
-import logging
 from datetime import datetime
+from glob import glob
 from pprint import pprint
 
-from jupyterbook_to_zendesk.logging import logger
+import boto3
+import yaml
+from bs4 import BeautifulSoup as bs4
 from prettyprinter import cpprint
+
+from jupyterbook_to_zendesk.config import Config
+from jupyterbook_to_zendesk.logging import logger
+from jupyterbook_to_zendesk.zendeskhc.HelpCenter import HelpCenter
 
 
 ERROR_CODE = 1
@@ -269,13 +269,7 @@ def find_section_name_in_list(section_name, sections_resp, category_id):
 
 
 def setup_section_on_zendesk(hc, section_name, zendesk_category_id):
-    data_dict = {
-        "section": {
-            "position": 0,
-            "locale": "en-us",
-            "name": section_name,
-        }
-    }
+    data_dict = {"section": {"position": 0, "locale": "en-us", "name": section_name}}
     try:
         resp = hc.create_section(
             zendesk_category_id, json.dumps(data_dict), locale="en-us"

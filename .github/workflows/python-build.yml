@@ -1,28 +1,28 @@
-
+---
 name: Python Build
 on: [push]
 
 env:
-  PROJECT_SLUG: "jupyterbook-zenhub"
-  DOCKER_ORG: "dabbleofdevops"
-  GITHUB_SHA: ${{ github.sha }}
-  GITHUB_REF: ${{ github.ref }}
+    PROJECT_SLUG: jupyterbook-zenhub
+    DOCKER_ORG: dabbleofdevops
+    GITHUB_SHA: ${{ github.sha }}
+    GITHUB_REF: ${{ github.ref }}
 
 jobs:
-  python-build:
-    runs-on: ubuntu-latest
+    python-build:
+        runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
+        strategy:
+            matrix:
         # in this example, there is a newer version already installed, 3.7.7, so the older version will be downloaded
-        python-version: [ '3.8', '3.9']
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-        architecture: 'x64'
-    - run: |
-        make clean
-        make install
-        jupyterbook-to-zendesk --help
+                python-version: ['3.8', '3.9']
+        steps:
+            - uses: actions/checkout@v2
+            - uses: actions/setup-python@v2
+              with:
+                  python-version: ${{ matrix.python-version }}
+                  architecture: x64
+            - run: |
+                  make clean
+                  make install
+                  jupyterbook-to-zendesk --help

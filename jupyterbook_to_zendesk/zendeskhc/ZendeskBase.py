@@ -1,7 +1,8 @@
-import requests
 import json
 import sys
 import time
+
+import requests
 
 
 class ZendeskError(Exception):

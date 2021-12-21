@@ -1,12 +1,13 @@
+---
 format: jb-book
 root: intro
 parts:
-- caption: Announcements
-  chapters:
-  - file: content
-  - file: notebooks
-- caption: Markdown Samples
-  chapters:
-  - file: markdown
-  - file: myfile1
-  - file: myfile2
+    - caption: Announcements
+      chapters:
+          - file: content
+          - file: notebooks
+    - caption: Markdown Samples
+      chapters:
+          - file: markdown
+          - file: myfile1
+          - file: myfile2

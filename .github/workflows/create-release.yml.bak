@@ -1,4 +1,4 @@
-name: Create Release 
+name: Create Release
 on:
   push:
     branches:
@@ -34,7 +34,7 @@ jobs:
           release_name: Release ${{ steps.tag_version.outputs.new_tag }}
           body: ${{ steps.tag_version.outputs.changelog }}
 
-      - name: Set Job Environmental Variables 
+      - name: Set Job Environmental Variables
         run: |
           CALVER="$( date -u '+%Y.%m.%d' )"
           SHA7="${GITHUB_SHA::7}"

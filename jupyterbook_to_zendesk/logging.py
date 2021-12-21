@@ -1,4 +1,7 @@
-import coloredlogs, logging, os
+import logging
+import os
+
+import coloredlogs
 
 # setup logger
 ROOT_SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))  # top source directory

@@ -1,26 +1,27 @@
+---
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.3.0
-    hooks:
-      - id: check-yaml
-      - id: end-of-file-fixer
-      - id: trailing-whitespace
-      - id: check-json
-      - id: pretty-format-json
-  - repo: https://github.com/psf/black
-    rev: 19.3b0
-    hooks:
-      - id: black
-  - repo: https://github.com/asottile/reorder_python_imports
-    rev: v2.6.0
-    hooks:
-      - id: reorder-python-imports
-  - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.21.0  # or higher tag
-    hooks:
-        - id: yamllint
-          args: [--format, parsable, --strict]
-  - repo: https://github.com/jumanjihouse/pre-commit-hook-yamlfmt
-    rev: 0.0.11  # or specific tag
-    hooks:
-        - id: yamlfmt
+    - repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v2.3.0
+      hooks:
+          - id: check-yaml
+          - id: end-of-file-fixer
+          - id: trailing-whitespace
+          - id: check-json
+          - id: pretty-format-json
+    - repo: https://github.com/psf/black
+      rev: 19.3b0
+      hooks:
+          - id: black
+    - repo: https://github.com/asottile/reorder_python_imports
+      rev: v2.6.0
+      hooks:
+          - id: reorder-python-imports
+    - repo: https://github.com/adrienverge/yamllint.git
+      rev: v1.21.0 # or higher tag
+      hooks:
+          - id: yamllint
+            args: [--format, parsable, --strict]
+    - repo: https://github.com/jumanjihouse/pre-commit-hook-yamlfmt
+      rev: 0.0.11 # or specific tag
+      hooks:
+          - id: yamlfmt

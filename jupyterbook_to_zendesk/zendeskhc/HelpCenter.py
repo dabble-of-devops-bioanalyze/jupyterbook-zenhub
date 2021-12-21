@@ -1,11 +1,13 @@
-import requests
 import json
-import sys
-from jupyterbook_to_zendesk.zendeskhc.ZendeskBase import *
-from pprint import pprint
 import os
-from jupyterbook_to_zendesk.logging import logger
+import sys
+from pprint import pprint
+
+import requests
 from prettyprinter import cpprint
+
+from jupyterbook_to_zendesk.logging import logger
+from jupyterbook_to_zendesk.zendeskhc.ZendeskBase import *
 
 
 class HelpCenter(Base):

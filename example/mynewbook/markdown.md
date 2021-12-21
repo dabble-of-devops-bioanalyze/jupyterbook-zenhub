@@ -8,9 +8,16 @@ html_meta:
 
 # Markdown Files
 
+UPDATE HERE
+
 Whether you write your book's content in Jupyter Notebooks (`.ipynb`) or
 in regular markdown files (`.md`), you'll write in the same flavor of markdown
 called **MyST Markdown**.
+
+```{note}
+Here is a note
+It is in a markdown file
+```
 
 ## What is MyST?
 

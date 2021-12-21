@@ -10,3 +10,5 @@ pytest
 pytest-watch
 black
 black[jupyter]
+pre-commit
+livereload

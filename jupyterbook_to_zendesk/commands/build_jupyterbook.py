@@ -1,19 +1,17 @@
-import sys
-import click
-import random
-import string
-import os
 import json
 import logging
-from pprint import pprint
-from cookiecutter.main import cookiecutter
+import os
+import random
+import string
+import sys
 from datetime import datetime
+from pprint import pprint
+
 import boto3
+import click
+from cookiecutter.main import cookiecutter
 
 from jupyterbook_to_zendesk.commands import md2zen as md
-
-import os
-
 from jupyterbook_to_zendesk.logging import logger
 
 

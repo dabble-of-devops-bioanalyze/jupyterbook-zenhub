@@ -1,14 +1,18 @@
-import sys
-import click
+import json
+import logging
+import os
 import random
 import string
-import os, json, boto3
-import logging
-from pprint import pprint
+import sys
 from datetime import datetime
+from pprint import pprint
+
+import boto3
+import click
+from prettyprinter import cpprint
+
 import jupyterbook_to_zendesk.commands.md2zen as md
 from jupyterbook_to_zendesk.logging import logger
-from prettyprinter import cpprint
 
 
 def sync(ctx):
@@ -50,9 +54,7 @@ def sync(ctx):
     category_id = md.check_category_on_zendesk(
         hc=hc, zendesk_category_name=App.get("zendesk_category_name")
     )
-    zendesk_json_pre = hc.list_articles_by_category(
-        category_id=category_id,
-    )
+    zendesk_json_pre = hc.list_articles_by_category(category_id=category_id)
 
     if ctx.obj["archive_flag"]:  # archive the book on Zendesk and exit OK.
         md.archive_book_from_zendesk(hc, zendesk_json_pre, zendesk_file_path)
@@ -63,7 +65,7 @@ def sync(ctx):
 
     try:
         html_files_for_zendesk = md.gen_list_of_sections_and_html_files(
-            source_folder_path=ctx.obj["source_dir"],
+            source_folder_path=ctx.obj["source_dir"]
         )
     except Exception as e:
         logger.warn("Error creating html files for zendesk")
@@ -74,9 +76,7 @@ def sync(ctx):
         hc=hc, html_files_list=html_files_for_zendesk, zendesk_category_id=category_id
     )
 
-    zendesk_json_pre = hc.list_articles_by_category(
-        category_id=category_id,
-    )
+    zendesk_json_pre = hc.list_articles_by_category(category_id=category_id)
 
     # now we iterate over list of files
     for f in html_files_for_zendesk:

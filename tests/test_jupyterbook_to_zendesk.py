@@ -1,17 +1,14 @@
 #!/usr/bin/env python
-
 """Tests for `jupyterbook_to_zendesk` package."""
-
-import pytest
-
-from click.testing import CliRunner
+import sys
 from pprint import pprint
 
+import pytest
+from click.testing import CliRunner
+
+from jupyterbook_to_zendesk import cli
 from jupyterbook_to_zendesk import jupyterbook_to_zendesk
 from jupyterbook_to_zendesk.commands import build_jupyterbook
-from jupyterbook_to_zendesk import cli
-
-import sys
 
 
 def test_command_line_interface():

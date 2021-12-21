@@ -1,5 +1,4 @@
 """Main module."""
-
 from jupyterbook_to_zendesk.cli import cli
 
 
