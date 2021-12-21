@@ -37,7 +37,7 @@ def command_build(ctx):
 @cli.command("sync-jb-to-zendesk")  # @cli, not @click!
 @click.pass_context
 def command_sync(ctx):
-    sync_to_zendesk.sync()
+    sync_to_zendesk.sync(ctx)
     click.echo("Syncing")
 
 

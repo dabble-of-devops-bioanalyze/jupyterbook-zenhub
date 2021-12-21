@@ -238,7 +238,6 @@ def handle_sections_on_zendesk(hc, html_files_list, zendesk_category_id):
 
     html_files_for_zendesk = []
 
-    logger.info(sections_resp)
     for item in html_files_list:
         section_name = item["section_name"]
         section_id = find_section_name_in_list(
@@ -256,8 +255,26 @@ def handle_sections_on_zendesk(hc, html_files_list, zendesk_category_id):
                 exit(1)
             else:
 
-                sections_resp["sections"].append(section_resp["section"])
-                section_id = section_resp["section"]["id"]
+                logger.info(sections_resp["sections"][-1])
+                # {
+                # 'id': 360005267318,
+                # 'url': 'https://dabbleofdevopshelp.zendesk.com/api/v2/help_center/en-us/sections/360005267318.json',
+                # 'html_url': 'https://dabbleofdevopshelp.zendesk.com/hc/en-us/sections/360005267318-SLURM-Job-Submission',
+                # 'category_id': 360003445438,
+                # 'position': 0,
+                # 'sorting': 'manual',
+                # 'created_at': '2021-03-10T09:24:11Z',
+                # 'updated_at': '2021-03-10T09:30:08Z',
+                # 'name': 'SLURM Job Submission',
+                # 'description': '',
+                # 'locale': 'en-us',
+                # 'source_locale': 'en-us',
+                # 'outdated': False,
+                # 'parent_section_id': None,
+                # 'theme_template': 'section_page'
+                # }
+                # sections_resp["sections"].append(section_resp["section"])
+                # section_id = section_resp["sections"][-1]["id"]
 
         html_files_for_zendesk.append(
             {

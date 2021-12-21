@@ -8,6 +8,7 @@ import logging
 from pprint import pprint
 from datetime import datetime
 import jupyterbook_to_zendesk.commands.md2zen as md
+import boto3
 
 logging.basicConfig(level=logging.INFO)
 
@@ -28,7 +29,7 @@ def sync(ctx):
     os.environ["AWS_SECRET_KEY"] = App.get("aws_secret")
 
     hc = md.HelpCenter(App.get("url"), App.get("username"), App.get("token"))
-    s3 = md.client(
+    s3 = boto3.client(
         "s3",
         aws_access_key_id=App.get("aws_access_key"),
         aws_secret_access_key=App.get("aws_secret"),
