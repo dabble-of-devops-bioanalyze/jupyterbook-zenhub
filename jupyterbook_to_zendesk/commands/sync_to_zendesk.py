@@ -2,15 +2,13 @@ import sys
 import click
 import random
 import string
-import os
-import json
+import os, json, boto3
 import logging
 from pprint import pprint
 from datetime import datetime
 import jupyterbook_to_zendesk.commands.md2zen as md
-import boto3
-
-logging.basicConfig(level=logging.INFO)
+from jupyterbook_to_zendesk.logging import logger
+from prettyprinter import cpprint
 
 
 def sync(ctx):
@@ -18,22 +16,29 @@ def sync(ctx):
 
     # 0. Initialize Zendesk router & S3
 
-    App = md.Config()
-
-    # Set configuration variables as environment variables.
-    os.environ["USERNAME"] = App.get("username")
-    os.environ["API_TOKEN"] = App.get("token")
-    os.environ["URL"] = App.get("url")
-    os.environ["AWS_BUCKET"] = App.get("aws_s3_bucket")
-    os.environ["AWS_ACCESS_KEY"] = App.get("aws_access_key")
-    os.environ["AWS_SECRET_KEY"] = App.get("aws_secret")
+    App = md.Config(ctx.obj["config_file"])
 
     hc = md.HelpCenter(App.get("url"), App.get("username"), App.get("token"))
-    s3 = boto3.client(
-        "s3",
-        aws_access_key_id=App.get("aws_access_key"),
-        aws_secret_access_key=App.get("aws_secret"),
-    )
+    try:
+        hc.get_me()
+    except Exception as e:
+        logger.warn("Error authenticating as the ZenDesk User")
+        logger.exception(e)
+        exit(1)
+
+    logger.info("Init s3 configuration")
+    try:
+        s3 = boto3.client(
+            "s3",
+            aws_access_key_id=App.get("aws_access_key"),
+            aws_secret_access_key=App.get("aws_secret"),
+        )
+    except Exception as e:
+        logger.warn("Error calling boto3.client")
+        logger.exception(e)
+        exit(1)
+
+    # TODO add check that s3 bucket exists
     aws_s3_bucket = App.get("aws_s3_bucket")
 
     # check if user exists on Zendesk and can do something on it.
@@ -41,7 +46,13 @@ def sync(ctx):
 
     # load any previous zendesk activity on this source folder
     zendesk_file_path = os.path.join(ctx.obj["destination_dir"], md.ZENDESK_FILE)
-    zendesk_json_pre = md.read_zendesk_json(zendesk_file_path)
+
+    category_id = md.check_category_on_zendesk(
+        hc=hc, zendesk_category_name=App.get("zendesk_category_name")
+    )
+    zendesk_json_pre = hc.list_articles_by_category(
+        category_id=category_id,
+    )
 
     if ctx.obj["archive_flag"]:  # archive the book on Zendesk and exit OK.
         md.archive_book_from_zendesk(hc, zendesk_json_pre, zendesk_file_path)
@@ -50,14 +61,39 @@ def sync(ctx):
 
     aws_s3_bucket = App.get("aws_s3_bucket")
 
+    try:
+        html_files_for_zendesk = md.gen_list_of_sections_and_html_files(
+            source_folder_path=ctx.obj["source_dir"],
+        )
+    except Exception as e:
+        logger.warn("Error creating html files for zendesk")
+        logger.exception(e)
+        exit(1)
+
+
+    html_files_for_zendesk = md.handle_sections_on_zendesk(
+        hc=hc, html_files_list=html_files_for_zendesk, zendesk_category_id=category_id
+    )
+
+    zendesk_json_pre = hc.list_articles_by_category(
+        category_id=category_id,
+    )
+
     # now we iterate over list of files
-    for f in md.html_files_for_zendesk:
-        md.logger.info(f"Processing: {f}")
+    for f in html_files_for_zendesk:
+        logger.info(f"Processing: {f}")
         article_dict = md.update_article_dict(f["html_file_path"], s3, aws_s3_bucket)
+
         section_id = f["section_id"]
-        # check if file already exists in zendesk_json_pre & if yes, then check if file exists still on zendesk
-        article_info = md.file_exists_on_zendesk(f, zendesk_json_pre)
-        if article_info == md.NOT_FOUND:
+        # article exists on zendesk
+        # if article with same title and section_id is found
+        # then article exists
+        logger.info('Checking to see if article exists')
+        article_info = md.article_exists(articles = zendesk_json_pre, title=article_dict['article']['title'], section_id = section_id)
+        logger.info(f'Article Exists: {cpprint(article_info)}')
+
+        if not article_info:
+            logger.info('Creating the article')
             response_json = hc.create_article(section_id, json.dumps(article_dict))
             article_id = response_json["article"]["id"]
             f.update({"article_id": article_id})
@@ -65,8 +101,9 @@ def sync(ctx):
             f.update({"article_html_url": article_html_url})
             md.logger.info(f"Article ID: {article_id}, Article URL: {article_html_url}")
         else:  # update_article
-            article_id = article_info["article_id"]
-            article_html_url = article_info["article_html_url"]
+            logger.info('Updating the article')
+            article_id = article_info["id"]
+            article_html_url = article_info["html_url"]
             translation_dict = {
                 "translation": {
                     "title": article_dict["article"]["title"],
@@ -80,10 +117,10 @@ def sync(ctx):
             f.update({"article_html_url": article_html_url})
 
     # 2nd pass to fix URLs
-    for f in md.html_files_for_zendesk:
+    for f in html_files_for_zendesk:
         logging.info(f"Processing (2nd Pass): {f}")
         article_dict = md.update_urls_in_article_dict(
-            f["html_file_path"], md.html_files_for_zendesk
+            f["html_file_path"], html_files_for_zendesk
         )
         translation_dict = {
             "translation": {
@@ -96,6 +133,5 @@ def sync(ctx):
         )
 
     logging.info("Syncing the jupyterbook to zendesk...")
-    logging.info(ctx)
     # add the rest of the sync commands here
     return 0

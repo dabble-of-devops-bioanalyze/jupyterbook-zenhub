@@ -1,3 +1,11 @@
+---
+html_meta:
+  "description lang=en": "metadata description"
+  "keywords": "Sphinx, MyST"
+  "labels": "Hello, World"
+  "author": "Jillian Rowe"
+---
+
 # Markdown Files
 
 Whether you write your book's content in Jupyter Notebooks (`.ipynb`) or

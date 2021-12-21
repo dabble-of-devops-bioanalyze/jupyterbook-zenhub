@@ -5,3 +5,6 @@ docutils<0.17,>=0.15
 boto3>=1.16.63
 cookiecutter
 GitPython
+coloredlogs
+prettyprinter
+python-slugify

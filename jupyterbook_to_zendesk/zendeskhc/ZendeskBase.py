@@ -39,7 +39,7 @@ class Base:
 
         if response_raw.status_code == 429:
             time.sleep(response_raw.headers['Retry-After'])
-            return put(url, data, email, password)
+            return self.put(url, data, email, password)
         else:
             if response_raw.headers['Content-Type'].startswith("application/json"):
                 response_json = json.loads(response_raw.content)
@@ -67,7 +67,7 @@ class Base:
         response_raw = self.session.delete(url)
         if response_raw.status_code == 429:
             time.sleep(response_raw.headers['Retry-After'])
-            return delete(url, data, email, password)
+            return self.delete(url, data, email, password)
         elif response_raw.status_code == 204: # HTTP Status for No Content
             return {'status_code': 204}
         elif response_raw.status_code == 404: # HTTP Status for Not Found

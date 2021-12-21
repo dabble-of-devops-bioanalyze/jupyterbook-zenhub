@@ -14,6 +14,9 @@ import logging
 from datetime import datetime
 from pprint import pprint
 
+from jupyterbook_to_zendesk.logging import logger
+from prettyprinter import cpprint
+
 
 ERROR_CODE = 1
 OK_CODE = 0
@@ -21,14 +24,7 @@ NOT_FOUND = -1
 ROOT_SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))  # top source directory
 AWS_URL_PREFIX = "https://s3.amazonaws.com/"
 
-
-# setup logger
-LOG_FILE_DIR = os.path.join(ROOT_SOURCE_DIR, "logs")
-LOGGING_FORMAT = "%(name)s - %(levelname)s - %(message)s"
-logger = logging.getLogger(__name__)
-
-
-TOC_FILE = "_toc.yml"
+# ZENDESK_FILE = os.path.join(os.getcwd(), "zendesk.json")
 ZENDESK_FILE = "zendesk.json"
 EXCLUDED_HTML_FILENAMES = [
     "index",
@@ -56,6 +52,7 @@ ARTICLE_DICT = {
         "title": "",
         "html_url": "",
         "user_segment_id": 360000471977,  # may change per user ID in config.cfg
+        # "user_segment_id": 374764982278,
         "label_names": "",
         "draft": True,
     },
@@ -75,8 +72,8 @@ def read_toc_yaml(yaml_file):
         logger.exception(
             f"Exception occured while reading TOC yaml file: {yaml_file}\n Exception: {e}"
         )
-        return ERROR_CODE, toc_dict
-    return OK_CODE, toc_dict
+        exit(1)
+    return toc_dict
 
 
 def gen_jupyter_book(source_folder_path, cwd=None):
@@ -89,18 +86,36 @@ def gen_jupyter_book(source_folder_path, cwd=None):
         exit(1)
 
 
-def gen_list_of_sections_and_html_files(source_folder_path, toc):
+def get_toc(source_folder_path):
+    if os.path.exists(os.path.join(source_folder_path, "_toc.yaml")):
+        return read_toc_yaml(os.path.join(source_folder_path, "_toc.yaml"))
+    elif os.path.exists(os.path.join(source_folder_path, "_toc.yml")):
+        return read_toc_yaml(os.path.join(source_folder_path, "_toc.yml"))
+    else:
+        logger.warn("Unable to find _toc.yaml or _toc.yml in source dir")
+        exit(1)
+
+
+def gen_list_of_sections_and_html_files(source_folder_path):
+    toc = get_toc(source_folder_path)
     html_files_list = []  # list of dicts
     html_folder_path = os.path.join(source_folder_path, "_build", "html")
-    pprint(toc)
 
-    # Add the root
-    html_file_path = os.path.join(html_folder_path, toc['root'] + ".html")
-    html_files_list.append(
-                {"section_name": 'Introduction', "html_file_path": html_file_path}
-    )
+    # Add the root for the jupyterbook > 0.12 toc config
+    if "root" in toc:
+        html_file_path = os.path.join(html_folder_path, str(toc["root"]) + ".html")
+        html_files_list.append(
+            {"section_name": "Introduction", "html_file_path": html_file_path}
+        )
 
-    parts = toc["parts"]
+    # TODO There are several jupyterbook _toc configurations that are possible
+    if "parts" in toc:
+        parts = toc["parts"]
+    else:
+        logger.warn(
+            "Key 'parts' not present in _toc. Please convert your _toc to the new jupyterbook format with format jb-book."
+        )
+        exit(1)
 
     for item in parts:
         if (
@@ -111,12 +126,12 @@ def gen_list_of_sections_and_html_files(source_folder_path, toc):
             files = item["chapters"]
             for f in files:
                 filename = f["file"]
-                html_file_path = os.path.join(html_folder_path, filename + ".html")
+                html_file_path = os.path.join(html_folder_path, str(filename) + ".html")
                 html_files_list.append(
                     {"section_name": section, "html_file_path": html_file_path}
                 )
-    logger.info(pprint(html_files_list))
-    logger.info(f"Final List of html files to be sent to Zendesk: \n {html_files_list}")
+    # logger.info(f"Final List of html files to be sent to Zendesk: \n {html_files_list}")
+    logger.debug(cpprint(html_files_list))
     return html_files_list
 
 
@@ -135,7 +150,13 @@ def upload_to_aws_s3(s3, local_file_path, bucket, s3_file_key):
 def update_article_dict(html_file_path, s3, aws_s3_bucket, article_dict=ARTICLE_DICT):
     with open(html_file_path, "r") as f:
         soup = bs4(f.read(), "html.parser")
-    article_dict["article"]["title"] = soup.title.text
+
+    article_dict["article"]["title"] = soup.title.text.strip()
+
+    soup = soup_cleanup(soup)
+    # TODO Add labels
+    labels = soup_find_labels(soup)
+
     # extract out main content of the html page
     msoup = soup.find(id="main-content")
     # find all image references in main content
@@ -154,7 +175,15 @@ def update_article_dict(html_file_path, s3, aws_s3_bucket, article_dict=ARTICLE_
         # formatter html to retain &nbsp; etc.
         oFile.write(soup.prettify(formatter="html5"))
         oFile.close()
+
     return article_dict
+
+
+def article_exists(articles, title, section_id):
+    for article in articles["articles"]:
+        if article["title"] == title:
+            return article
+    return False
 
 
 def find_matching_url(url, html_files_for_zendesk):
@@ -175,12 +204,40 @@ def find_matching_url(url, html_files_for_zendesk):
     return "#"
 
 
+def soup_find_labels(soup):
+    # <meta content="Hello, World" name="labels" />
+    element = soup.find("meta", {"name": "labels"})
+    labels = []
+    if element:
+        if 'content' in element:
+            t_labels = element['content'].split(',')
+            for label in t_labels:
+                labels.append(label.strip())
+    return labels
+
+
+def soup_cleanup(soup):
+    # get rid of the previous/next
+    element = soup.find("div", {"class": "prev-next-area"})
+    if element:
+        element.decompose()
+
+    elements = soup.find_all("a", {"class": "headerlink"})
+    for element in elements:
+        element.extract()
+    return soup
+
+
 def update_urls_in_article_dict(
     html_file_path, html_files_for_zendesk, article_dict=ARTICLE_DICT
 ):
     with open(html_file_path, "r") as f:
         soup = bs4(f.read(), "html.parser")
-    article_dict["article"]["title"] = soup.title.text
+
+    soup = soup_cleanup(soup)
+    labels = soup_find_labels(soup)
+
+    article_dict["article"]["title"] = soup.title.text.strip()
     # extract out main content of the html page
     msoup = soup.find(id="main-content")
     a_tags = msoup.find_all("a")
@@ -254,27 +311,15 @@ def handle_sections_on_zendesk(hc, html_files_list, zendesk_category_id):
                 )
                 exit(1)
             else:
-
-                logger.info(sections_resp["sections"][-1])
-                # {
-                # 'id': 360005267318,
-                # 'url': 'https://dabbleofdevopshelp.zendesk.com/api/v2/help_center/en-us/sections/360005267318.json',
-                # 'html_url': 'https://dabbleofdevopshelp.zendesk.com/hc/en-us/sections/360005267318-SLURM-Job-Submission',
-                # 'category_id': 360003445438,
-                # 'position': 0,
-                # 'sorting': 'manual',
-                # 'created_at': '2021-03-10T09:24:11Z',
-                # 'updated_at': '2021-03-10T09:30:08Z',
-                # 'name': 'SLURM Job Submission',
-                # 'description': '',
-                # 'locale': 'en-us',
-                # 'source_locale': 'en-us',
-                # 'outdated': False,
-                # 'parent_section_id': None,
-                # 'theme_template': 'section_page'
-                # }
-                # sections_resp["sections"].append(section_resp["section"])
-                # section_id = section_resp["sections"][-1]["id"]
+                # logger.info(sections_resp)
+                logger.info("Here is 1 section")
+                # logger.info(cpprint(section_resp))
+                try:
+                    sections_resp["sections"].append(section_resp["section"])
+                    section_id = section_resp["section"]["id"]
+                except Exception as e:
+                    logger.warn("Exception adding section id")
+                    logger.exception(e)
 
         html_files_for_zendesk.append(
             {
@@ -297,11 +342,15 @@ def read_zendesk_json(zendesk_file_path):
 
 def file_exists_on_zendesk(file_dict, zendesk_json_pre):
     # first find if file exists in zendesk_json_pre
+    # logger.info(cpprint(file_dict))
+    # if len(zendesk_json_pre["articles"]):
+    #     logger.info(cpprint(zendesk_json_pre["articles"][0]))
     html_file_path = file_dict["html_file_path"]
     for item in zendesk_json_pre["articles"]:
-        if item["html_file_path"] == html_file_path:  # file exists in pre
-            # now we check if it exists on zendesk (TBD)
-            return item
+        if "html_file_path" in item:
+            if item["html_file_path"] == html_file_path:  # file exists in pre
+                # now we check if it exists on zendesk (TBD)
+                return item
     return NOT_FOUND
 
 
@@ -375,4 +424,3 @@ def delete_local_html_of_book(source_folder_path):
     if os.path.exists(build_folder_path):
         logger.info(f"Removing old version of build folder: {build_folder_path}")
         shutil.rmtree(build_folder_path)
-
