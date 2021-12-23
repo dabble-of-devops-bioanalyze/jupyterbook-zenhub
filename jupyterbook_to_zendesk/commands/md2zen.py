@@ -8,6 +8,7 @@ from datetime import datetime
 from glob import glob
 from pprint import pprint
 
+from copy import deepcopy
 import boto3
 import yaml
 from bs4 import BeautifulSoup as bs4
@@ -147,7 +148,7 @@ def upload_to_aws_s3(s3, local_file_path, bucket, s3_file_key):
         return False
 
 
-def update_article_dict(html_file_path, s3, aws_s3_bucket, article_dict=ARTICLE_DICT):
+def update_article_dict(html_file_path, s3, aws_s3_bucket, article_dict=deepcopy(ARTICLE_DICT)):
     with open(html_file_path, "r") as f:
         soup = bs4(f.read(), "html.parser")
 
@@ -229,7 +230,7 @@ def soup_cleanup(soup):
 
 
 def update_urls_in_article_dict(
-    html_file_path, html_files_for_zendesk, article_dict=ARTICLE_DICT
+    html_file_path, html_files_for_zendesk, article_dict=deepcopy(ARTICLE_DICT)
 ):
     with open(html_file_path, "r") as f:
         soup = bs4(f.read(), "html.parser")
@@ -242,17 +243,18 @@ def update_urls_in_article_dict(
     msoup = soup.find(id="main-content")
     a_tags = msoup.find_all("a")
     for tag in a_tags:
-        a_url = tag["href"]
-        if (
-            a_url.startswith("https://")
-            or a_url.startswith("http://")
-            or a_url.startswith("mailto:")
-            or a_url.startswith("#")
-        ):
-            continue
-        else:
-            new_url = find_matching_url(a_url, html_files_for_zendesk)
-            tag["href"] = new_url
+        if "href" in tag:
+            a_url = tag["href"]
+            if (
+                a_url.startswith("https://")
+                or a_url.startswith("http://")
+                or a_url.startswith("mailto:")
+                or a_url.startswith("#")
+            ):
+                continue
+            else:
+                new_url = find_matching_url(a_url, html_files_for_zendesk)
+                tag["href"] = new_url
     article_dict["article"]["body"] = msoup.prettify(formatter="html5")
     with open(html_file_path, "w") as oFile:  # write the file back to disk
         # formatter html to retain &nbsp; etc.

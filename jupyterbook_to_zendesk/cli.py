@@ -41,9 +41,13 @@ def command_build(ctx):
 
 @cli.command("sync-jb-to-zendesk")  # @cli, not @click!
 @click.option("--archive/--no-archive", default=False)
+@click.option("--draft/--no-draft", default=True)
+@click.option("--public/--no-public", default=True)
 @click.pass_context
-def command_sync(ctx, archive):
+def command_sync(ctx, archive, draft, public):
     ctx.obj["archive_flag"] = archive
+    ctx.obj["draft"] = draft
+    ctx.obj["public"] = public
     logger.info("Syncing the Jupyterbook to ZenDesk")
     sync_to_zendesk.sync(ctx)
 

@@ -95,6 +95,9 @@ def sync(ctx):
         )
         logger.info(f"Article Exists: {cpprint(article_info)}")
 
+        if ctx.obj["public"]:
+            article_dict["article"]["user_segment_id"] = None
+
         if not article_info:
             logger.info("Creating the article")
             response_json = hc.create_article(section_id, json.dumps(article_dict))
@@ -108,13 +111,18 @@ def sync(ctx):
             article_id = article_info["id"]
             article_html_url = article_info["html_url"]
             translation_dict = {
+                "article": {
+                    "user_segment_id": article_dict["article"]["user_segment_id"]
+                },
                 "translation": {
                     "title": article_dict["article"]["title"],
                     "body": article_dict["article"]["body"],
-                }
+                },
             }
-            response_json = hc.update_article_translation(
-                article_id, json.dumps(translation_dict), locale="en-us"
+            response_json = hc.update_article_metadata(
+                article_id=article_id,
+                data=json.dumps(article_dict["article"]),
+                locale="en-us",
             )
             f.update({"article_id": article_id})
             f.update({"article_html_url": article_html_url})
@@ -123,18 +131,38 @@ def sync(ctx):
     for f in html_files_for_zendesk:
         logging.info(f"Processing (2nd Pass): {f}")
         article_dict = md.update_urls_in_article_dict(
-            f["html_file_path"], html_files_for_zendesk
+            f["html_file_path"],
+            html_files_for_zendesk,
         )
+
+        draft = ctx.obj["draft"]
+        article_dict["article"]["draft"] = draft
+
+        if ctx.obj["public"]:
+            article_dict["article"]["user_segment_id"] = None
+
         translation_dict = {
             "translation": {
                 "title": article_dict["article"]["title"],
                 "body": article_dict["article"]["body"],
+                "draft": article_dict["article"]["draft"],
             }
         }
+        logging.info("Syncing the jupyterbook to zendesk...")
+        response_json = hc.update_article_metadata(
+            article_id=article_id,
+            data=json.dumps(article_dict["article"]),
+            locale="en-us",
+        )
+        logging.info("Updating article visibility")
+        logging.debug(cpprint(response_json))
+
         response_json = hc.update_article_translation(
             f["article_id"], json.dumps(translation_dict), locale="en-us"
         )
+        # get useful output
+        del response_json["translation"]["body"]
+        logging.debug(cpprint(response_json))
 
-    logging.info("Syncing the jupyterbook to zendesk...")
     # add the rest of the sync commands here
     return 0
